@@ -267,8 +267,8 @@ fn parse_avc1(mut buf: BytesMut) {
         match b.box_type {
             // avcC
             0x61766343 => {
-                let avcC = fmp4::avcC::parse(&mut b.payload);
-                eprintln!("{:?}", avcC);
+                let avc_config = fmp4::avcC::parse(&mut b.payload);
+                eprintln!("{:?}", avc_config);
             }
             _ => {
             }
