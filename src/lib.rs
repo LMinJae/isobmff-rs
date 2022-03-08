@@ -2,7 +2,7 @@ use bytes::{Buf, BufMut, BytesMut};
 
 pub trait IO {
     fn parse(r: &mut BytesMut) -> Self;
-    fn as_bytes(&self) -> BytesMut;
+    fn as_bytes(&mut self) -> BytesMut;
 }
 
 pub struct Box {
@@ -30,7 +30,7 @@ impl IO for Box {
         }
     }
 
-    fn as_bytes(&self) -> BytesMut {
+    fn as_bytes(&mut self) -> BytesMut {
         let mut w = BytesMut::new();
 
         let size = 4 + self.payload.len();
@@ -44,6 +44,30 @@ impl IO for Box {
             w.put_u64(size as u64);
         }
         w.put(self.payload.chunk());
+
+        w
+    }
+}
+
+pub struct FullBox {
+    version: u8,
+    flags: u32,
+}
+
+impl IO for FullBox {
+    fn parse(r: &mut BytesMut) -> Self {
+        let t = r.get_u32();
+
+        Self {
+            version: (t >> 24) as u8,
+            flags: t & 0x00FFFFFF,
+        }
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        w.put_u32((self.version as u32) << 24 | self.flags);
 
         w
     }
@@ -71,7 +95,7 @@ impl IO for ftyp {
         }
     }
 
-    fn as_bytes(&self) -> BytesMut {
+    fn as_bytes(&mut self) -> BytesMut {
         let mut w = BytesMut::new();
 
         w.put_u32(self.major_brand);
@@ -158,7 +182,7 @@ impl IO for mvhd {
         rst
     }
 
-    fn as_bytes(&self) -> BytesMut {
+    fn as_bytes(&mut self) -> BytesMut {
         let mut w = BytesMut::new();
 
         if (u32::MAX as u64) < self.creation_time ||
@@ -197,6 +221,8 @@ impl IO for mvhd {
 
 #[allow(non_camel_case_types)]
 pub struct tkhd {
+    base: FullBox,
+
     pub creation_time: u64,
     pub modification_time: u64,
     pub track_id: u32,
@@ -212,6 +238,7 @@ pub struct tkhd {
 impl Default for tkhd {
     fn default() -> Self {
         Self {
+            base: FullBox { version: 0, flags: 0 },
             creation_time: 0,
             modification_time: 0,
             track_id: 0,
@@ -228,10 +255,8 @@ impl Default for tkhd {
 
 impl IO for tkhd {
     fn parse(r: &mut BytesMut) -> Self {
-        let version = r.get_u8();
-        let _flags = r.split_to(3);
-
         let mut rst = Self::default();
+        rst.base = FullBox::parse(r);
 
         {
             let (
@@ -240,7 +265,7 @@ impl IO for tkhd {
                 track_id,
                 _,
                 duration,
-            ) = if 1 == version {
+            ) = if 1 == rst.base.version {
                 (
                     r.get_u64(),
                     r.get_u64(),
@@ -277,13 +302,14 @@ impl IO for tkhd {
         rst
     }
 
-    fn as_bytes(&self) -> BytesMut {
+    fn as_bytes(&mut self) -> BytesMut {
         let mut w = BytesMut::new();
 
         if (u32::MAX as u64) < self.creation_time ||
             (u32::MAX as u64) < self.modification_time ||
             (u32::MAX as u64) < self.duration {
-            w.put_u32(0x01000000);
+            self.base.version = 1;
+            w.put(self.base.as_bytes());
 
             w.put_u64(self.creation_time);
             w.put_u64(self.modification_time);
@@ -291,7 +317,8 @@ impl IO for tkhd {
             w.put_u32(0);
             w.put_u64(self.duration);
         } else {
-            w.put_u32(0);
+            self.base.version = 0;
+            w.put(self.base.as_bytes());
 
             w.put_u32(self.creation_time as u32);
             w.put_u32(self.modification_time as u32);
@@ -317,6 +344,8 @@ impl IO for tkhd {
 
 #[allow(non_camel_case_types)]
 pub struct mdhd {
+    base: FullBox,
+
     pub creation_time: u64,
     pub modification_time: u64,
     pub timescale: u32,
@@ -330,6 +359,7 @@ impl IO for mdhd {
         let _flags = r.split_to(3);
 
         let mut rst = Self {
+            base: FullBox { version, flags: 0 },
             creation_time: 0,
             modification_time: 0,
             timescale: 0,
@@ -370,20 +400,22 @@ impl IO for mdhd {
         rst
     }
 
-    fn as_bytes(&self) -> BytesMut {
+    fn as_bytes(&mut self) -> BytesMut {
         let mut w = BytesMut::new();
 
         if (u32::MAX as u64) < self.creation_time ||
             (u32::MAX as u64) < self.modification_time ||
             (u32::MAX as u64) < self.duration {
-            w.put_u32(0x01000000);
+            self.base.version = 1;
+            w.put(self.base.as_bytes());
 
             w.put_u64(self.creation_time);
             w.put_u64(self.modification_time);
             w.put_u32(self.timescale);
             w.put_u64(self.duration);
         } else {
-            w.put_u32(0);
+            self.base.version = 0;
+            w.put(self.base.as_bytes());
 
             w.put_u32(self.creation_time as u32);
             w.put_u32(self.modification_time as u32);
@@ -400,13 +432,15 @@ impl IO for mdhd {
 
 #[allow(non_camel_case_types)]
 pub struct hdlr {
+    base: FullBox,
+
     pub handler_type: u32,
     pub name: String,
 }
 
 impl IO for hdlr {
     fn parse(r: &mut BytesMut) -> Self {
-        let _ = r.get_u32();
+        let base = FullBox::parse(r);
 
         let _ = r.get_u32();
         let handler_type = r.get_u32();
@@ -414,15 +448,16 @@ impl IO for hdlr {
         let name = std::str::from_utf8(r.split_to(r.len() - 1).chunk()).unwrap().to_string();
 
         Self {
+            base,
             handler_type,
             name,
         }
     }
 
-    fn as_bytes(&self) -> BytesMut {
+    fn as_bytes(&mut self) -> BytesMut {
         let mut w = BytesMut::new();
 
-        w.put_u32(0);
+        w.put(self.base.as_bytes());
 
         w.put_u32(0);
         w.put_u32(self.handler_type);
