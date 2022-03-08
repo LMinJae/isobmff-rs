@@ -267,28 +267,8 @@ fn parse_avc1(mut buf: BytesMut) {
         match b.box_type {
             // avcC
             0x61766343 => {
-                let configuration_version = b.payload.get_u8();
-                let profile_indication = b.payload.get_u8();
-                let profile_compatibility = b.payload.get_u8();
-                let level_indication = b.payload.get_u8();
-                let length_size_minus_one = b.payload.get_u8() & 0b11;
-                eprintln!("\t\t\t\t\t\t\t\t\t\tconfiguration_version: {:?}", configuration_version);
-                eprintln!("\t\t\t\t\t\t\t\t\t\tprofile_indication: {:?}", profile_indication);
-                eprintln!("\t\t\t\t\t\t\t\t\t\tprofile_compatibility: {:?}", profile_compatibility);
-                eprintln!("\t\t\t\t\t\t\t\t\t\tlevel_indication: {:?}", level_indication);
-                eprintln!("\t\t\t\t\t\t\t\t\t\tlength_size_minus_one: {:?}", length_size_minus_one);
-                let nb_sps = b.payload.get_u8() & 0b11111;
-                eprintln!("\t\t\t\t\t\t\t\t\t\tnb_sps: {:?}", nb_sps);
-                for _ in 0..nb_sps {
-                    let len = b.payload.get_u16();
-                    eprintln!("\t\t\t\t\t\t\t\t\t\t\t{:x?}", b.payload.split_to(len as usize));
-                }
-                let nb_pps = b.payload.get_u8() & 0b11111;
-                eprintln!("\t\t\t\t\t\t\t\t\t\tnb_pps: {:?}", nb_pps);
-                for _ in 0..nb_pps {
-                    let len = b.payload.get_u16();
-                    eprintln!("\t\t\t\t\t\t\t\t\t\t\t{:x?}", b.payload.split_to(len as usize));
-                }
+                let avcC = fmp4::avcC::parse(&mut b.payload);
+                eprintln!("{:?}", avcC);
             }
             _ => {
             }
