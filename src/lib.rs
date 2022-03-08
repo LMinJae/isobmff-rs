@@ -51,8 +51,8 @@ impl IO for Box {
 }
 
 pub struct FullBox {
-    pub version: u8,
-    pub flags: u32,
+    version: u8,
+    flags: u32,
 }
 
 impl IO for FullBox {
@@ -76,9 +76,9 @@ impl IO for FullBox {
 
 #[allow(non_camel_case_types)]
 pub struct ftyp {
-    pub major_brand: u32,
-    pub minor_version: u32,
-    pub compatible_brands: Vec<u32>,
+    major_brand: u32,
+    minor_version: u32,
+    compatible_brands: Vec<u32>,
 }
 
 impl Debug for ftyp {
@@ -133,14 +133,14 @@ impl IO for ftyp {
 
 #[allow(non_camel_case_types)]
 pub struct mvhd {
-    pub creation_time: u64,
-    pub modification_time: u64,
-    pub timescale: u32,
-    pub duration: u64,
-    pub rate: u32,
-    pub volume: u16,
-    pub matrix: [u32; 9],
-    pub next_track_id: u32,
+    creation_time: u64,
+    modification_time: u64,
+    timescale: u32,
+    duration: u64,
+    rate: u32,
+    volume: u16,
+    matrix: [u32; 9],
+    next_track_id: u32,
 }
 
 impl Debug for mvhd {
@@ -268,16 +268,16 @@ impl IO for mvhd {
 pub struct tkhd {
     base: FullBox,
 
-    pub creation_time: u64,
-    pub modification_time: u64,
-    pub track_id: u32,
-    pub duration: u64,
-    pub layer: u16,
-    pub alternate_group: u16,
-    pub volume: u16,
+    creation_time: u64,
+    modification_time: u64,
+    track_id: u32,
+    duration: u64,
+    layer: u16,
+    alternate_group: u16,
+    volume: u16,
     matrix: [u32; 9],
-    pub width: u32,
-    pub height: u32,
+    width: u32,
+    height: u32,
 }
 
 impl Debug for tkhd {
@@ -408,11 +408,11 @@ impl IO for tkhd {
 pub struct mdhd {
     base: FullBox,
 
-    pub creation_time: u64,
-    pub modification_time: u64,
-    pub timescale: u32,
-    pub duration: u64,
-    pub language: u16,
+    creation_time: u64,
+    modification_time: u64,
+    timescale: u32,
+    duration: u64,
+    language: u16,
 }
 
 impl Debug for mdhd {
@@ -514,8 +514,8 @@ impl IO for mdhd {
 pub struct hdlr {
     base: FullBox,
 
-    pub handler_type: u32,
-    pub name: String,
+    handler_type: u32,
+    name: String,
 }
 
 impl Debug for hdlr {
@@ -567,8 +567,8 @@ impl IO for hdlr {
 pub struct vmhd {
     base: FullBox,
 
-    pub graphicsmode: u16,
-    pub opcolor: [u16; 3],
+    graphicsmode: u16,
+    opcolor: [u16; 3],
 }
 
 impl Debug for vmhd {
@@ -613,7 +613,7 @@ impl IO for vmhd {
 pub struct smhd {
     base: FullBox,
 
-    pub balance: u16,
+    balance: u16,
 }
 
 impl Debug for smhd {
@@ -647,7 +647,7 @@ impl IO for smhd {
 
 #[allow(non_camel_case_types)]
 pub struct dinf {
-    pub dref: dref,
+    dref: dref,
 }
 
 impl Debug for dinf {
@@ -738,9 +738,9 @@ impl IO for DataEntry {
 
 #[allow(non_camel_case_types)]
 pub struct dref {
-    pub base: FullBox,
+    base: FullBox,
 
-    pub entries: Vec<DataEntry>,
+    entries: Vec<DataEntry>,
 }
 
 impl IO for dref {
@@ -1175,13 +1175,13 @@ impl SampleEntry {
 #[allow(non_camel_case_types)]
 #[derive(Clone)]
 pub struct avcC {
-    pub configuration_version: u8,
-    pub profile_indication: u8,
-    pub profile_compatibility: u8,
-    pub level_indication: u8,
-    pub length_size_minus_one: u8,
-    pub sps: Vec<BytesMut>,
-    pub pps: Vec<BytesMut>,
+    configuration_version: u8,
+    profile_indication: u8,
+    profile_compatibility: u8,
+    level_indication: u8,
+    length_size_minus_one: u8,
+    sps: Vec<BytesMut>,
+    pps: Vec<BytesMut>,
 }
 
 impl Debug for avcC {
@@ -1266,7 +1266,7 @@ impl IO for avcC {
 pub struct stts {
     base: FullBox,
 
-    pub entries: Vec<(u32, u32)>,
+    entries: Vec<(u32, u32)>,
 }
 
 impl Debug for stts {
@@ -1316,7 +1316,7 @@ impl IO for stts {
 pub struct stsc {
     base: FullBox,
 
-    pub entries: Vec<(u32, u32, u32)>,
+    entries: Vec<(u32, u32, u32)>,
 }
 
 impl Debug for stsc {
@@ -1368,8 +1368,8 @@ impl IO for stsc {
 pub struct stsz {
     base: FullBox,
 
-    pub sample_size: u32,
-    pub entries: Vec<u32>,
+    sample_size: u32,
+    entries: Vec<u32>,
 }
 
 impl Debug for stsz {
@@ -1424,7 +1424,7 @@ impl IO for stsz {
 pub struct stco {
     base: FullBox,
 
-    pub entries: Vec<u32>,
+    entries: Vec<u32>,
 }
 
 impl Debug for stco {
@@ -1539,7 +1539,7 @@ impl IO for moof {
 pub struct mfhd {
     base: FullBox,
 
-    pub sequence_number: u32,
+    sequence_number: u32,
 }
 
 impl Debug for mfhd {
@@ -1571,8 +1571,8 @@ impl IO for mfhd {
 
 #[allow(non_camel_case_types)]
 pub struct traf {
-    pub tfhd: tfhd,
-    pub truns: Vec<trun>,
+    tfhd: tfhd,
+    truns: Vec<trun>,
 }
 
 impl Debug for traf {
@@ -1645,13 +1645,13 @@ impl IO for traf {
 
 #[allow(non_camel_case_types)]
 pub struct tfhd {
-    pub base: FullBox,
-    pub track_id: u32,
-    pub base_data_offset: Option<u64>,
-    pub sample_description_index: Option<u32>,
-    pub default_sample_duration: Option<u32>,
-    pub default_sample_size: Option<u32>,
-    pub default_sample_flags: Option<u32>,
+    base: FullBox,
+    track_id: u32,
+    base_data_offset: Option<u64>,
+    sample_description_index: Option<u32>,
+    default_sample_duration: Option<u32>,
+    default_sample_size: Option<u32>,
+    default_sample_flags: Option<u32>,
 }
 
 impl Debug for tfhd {
@@ -1757,10 +1757,10 @@ impl IO for tfhd {
 
 #[allow(non_camel_case_types)]
 pub struct trun {
-    pub base: FullBox,
-    pub data_offset: Option<u32>,
-    pub first_sample_flags: Option<u32>,
-    pub samples: Vec<(Option<u32>, Option<u32>, Option<u32>, Option<u32>)>
+    base: FullBox,
+    data_offset: Option<u32>,
+    first_sample_flags: Option<u32>,
+    samples: Vec<(Option<u32>, Option<u32>, Option<u32>, Option<u32>)>
 }
 
 impl Debug for trun {
