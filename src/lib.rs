@@ -393,3 +393,41 @@ impl IO for mdhd {
         w
     }
 }
+
+
+pub struct hdlr {
+    pub handler_type: u32,
+    pub name: String,
+}
+
+impl IO for hdlr {
+    fn parse(r: &mut BytesMut) -> Self {
+        let _ = r.get_u32();
+
+        let _ = r.get_u32();
+        let handler_type = r.get_u32();
+        let _ = r.split_to(12);
+        let name = std::str::from_utf8(r.split_to(r.len() - 1).chunk()).unwrap().to_string();
+
+        Self {
+            handler_type,
+            name,
+        }
+    }
+
+    fn as_bytes(self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        w.put_u32(0);
+
+        w.put_u32(0);
+        w.put_u32(self.handler_type);
+        w.put_u32(0);
+        w.put_u32(0);
+        w.put_u32(0);
+        w.put(self.name.as_bytes());
+        w.put_u8(0);
+
+        w
+    }
+}

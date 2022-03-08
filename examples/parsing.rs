@@ -128,14 +128,10 @@ fn parse_mdia(mut buf: BytesMut) {
             }
             // hdlr: Handler Reference
             0x68646c72 => {
-                let _ = b.payload.get_u32();
+                let hdlr = fmp4::hdlr::parse(&mut b.payload);
 
-                let _ = b.payload.get_u32();
-                let handler_type = b.payload.get_u32();
-                let _ = b.payload.split_to(12);
-
-                eprintln!("\t\t\t\thandler_type: {:?}", std::str::from_utf8(&handler_type.to_be_bytes()).unwrap_or(""));
-                eprintln!("\t\t\t\tname: {:?}", std::str::from_utf8(&b.payload.split_to(b.payload.len() - 1)).unwrap());
+                eprintln!("\t\t\t\thandler_type: {:?}", hdlr.handler_type);
+                eprintln!("\t\t\t\tname: {:?}", hdlr.name);
             }
             // minf: Midia Information
             0x6d696e66 => {
