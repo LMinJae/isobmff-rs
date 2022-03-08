@@ -100,7 +100,7 @@ impl IO for ftyp {
 
         w.put_u32(self.major_brand);
         w.put_u32(self.minor_version);
-        for it in self.compatible_brands.iter() {
+        for it in &self.compatible_brands {
             w.put_u32(*it);
         }
 
@@ -207,8 +207,8 @@ impl IO for mvhd {
         w.put_u16(self.volume);
         w.put_u16(0);
         w.put_u64(0);
-        for it in self.matrix.iter() {
-            w.put_u32(*it);
+        for it in self.matrix {
+            w.put_u32(it);
         }
         w.put_u64(0);
         w.put_u64(0);
@@ -332,8 +332,8 @@ impl IO for tkhd {
         w.put_u16(self.alternate_group);
         w.put_u16(self.volume);
         w.put_u16(0);
-        for it in self.matrix.iter() {
-            w.put_u32(*it);
+        for it in self.matrix {
+            w.put_u32(it);
         }
         w.put_u32(self.width);
         w.put_u32(self.height);
