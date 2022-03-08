@@ -232,15 +232,9 @@ fn parse_stbl(mut buf: BytesMut) {
         match b.box_type {
             // stts: Decoding Time to Sample
             0x73747473 => {
-                let _ = fmp4::FullBox::parse(&mut b.payload);
-
-                let entry_count = b.payload.get_u32();
-
-                eprintln!("\t\t\t\t\t\tentry_count: {:?}", entry_count);
-                for _ in 0..entry_count {
-                    let sample_count = b.payload.get_u32();
-                    let sample_delta = b.payload.get_u32();
-
+                let stts = fmp4::stts::parse(&mut b.payload);
+                eprintln!("\t\t\t\t\t\tentry_count: {:?}", stts.entries.len());
+                for (sample_count, sample_delta) in stts.entries {
                     eprintln!("\t\t\t\t\t\t\tsample_count: {:?}", sample_count);
                     eprintln!("\t\t\t\t\t\t\tsample_delta: {:?}", sample_delta);
                 }
@@ -257,50 +251,32 @@ fn parse_stbl(mut buf: BytesMut) {
                     parse_stsd_entry(b.payload.split_to(len as usize));
                 }
             }
+            // stsz: Sample Size
+            0x7374737a => {
+                let stsz = fmp4::stsz::parse(&mut b.payload);
+
+                eprintln!("\t\t\t\t\t\tsample_size: {:?}", stsz.sample_size);
+                eprintln!("\t\t\t\t\t\tsample_count: {:?}", stsz.entries.len());
+                if 0 == stsz.sample_size {
+                    eprintln!("\t\t\t\t\t\t\tentry: {:?}", stsz.entries);
+                }
+            }
             // stsc: Sample To Chunk
             0x73747363 => {
-                let _ = fmp4::FullBox::parse(&mut b.payload);
-
-                let entry_count = b.payload.get_u32();
-
-                eprintln!("\t\t\t\t\t\tentry_count: {:?}", entry_count);
-                for _ in 0..entry_count {
-                    let first_chunk = b.payload.get_u32();
-                    let samples_per_chunk = b.payload.get_u32();
-                    let sample_description_index = b.payload.get_u32();
-
+                let stsc = fmp4::stsc::parse(&mut b.payload);
+                eprintln!("\t\t\t\t\t\tentry_count: {:?}", stsc.entries.len());
+                for (first_chunk, samples_per_chunk, sample_description_index) in stsc.entries {
                     eprintln!("\t\t\t\t\t\t\tfirst_chunk: {:?}", first_chunk);
                     eprintln!("\t\t\t\t\t\t\tsamples_per_chunk: {:?}", samples_per_chunk);
                     eprintln!("\t\t\t\t\t\t\tsample_description_index: {:?}", sample_description_index);
                 }
             }
-            // stsz: Sample Size
-            0x7374737a => {
-                let _ = fmp4::FullBox::parse(&mut b.payload);
-
-                let sample_size = b.payload.get_u32();
-                let sample_count = b.payload.get_u32();
-
-                eprintln!("\t\t\t\t\t\tsample_size: {:?}", sample_size);
-                eprintln!("\t\t\t\t\t\tsample_count: {:?}", sample_count);
-                if 0 == sample_size {
-                    for _ in 0..sample_count {
-                        let entry_size = b.payload.get_u32();
-
-                        eprintln!("\t\t\t\t\t\t\tfirst_chunk: {:?}", entry_size);
-                    }
-                }
-            }
             // stco: Chunk Offset
             0x7374636f => {
-                let _ = fmp4::FullBox::parse(&mut b.payload);
+                let stco = fmp4::stco::parse(&mut b.payload);
 
-                let entry_count = b.payload.get_u32();
-
-                eprintln!("\t\t\t\t\t\tentry_count: {:?}", entry_count);
-                for _ in 0..entry_count {
-                    let chunk_offset = b.payload.get_u32();
-
+                eprintln!("\t\t\t\t\t\tentry_count: {:?}", stco.entries.len());
+                for chunk_offset in stco.entries {
                     eprintln!("\t\t\t\t\t\t\tchunk_offset: {:?}", chunk_offset);
                 }
             }

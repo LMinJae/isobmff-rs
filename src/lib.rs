@@ -497,3 +497,161 @@ impl IO for url_ {
         w
     }
 }
+
+#[allow(non_camel_case_types)]
+pub struct stts {
+    base: FullBox,
+
+    pub entries: Vec<(u32, u32)>,
+}
+
+impl IO for stts {
+    fn parse(r: &mut BytesMut) -> Self {
+        let mut rst = Self {
+            base: FullBox::parse(r),
+            entries: vec![]
+        };
+
+        let entry_count = r.get_u32();
+        for _ in 0..entry_count {
+            rst.entries.push((r.get_u32(), r.get_u32()))
+        }
+
+        rst
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        w.put(self.base.as_bytes());
+
+        w.put_u32(self.entries.len() as u32);
+
+        for (count, delta) in &self.entries {
+            w.put_u32(*count);
+            w.put_u32(*delta);
+        }
+
+        w
+    }
+}
+
+#[allow(non_camel_case_types)]
+pub struct stsz {
+    base: FullBox,
+
+    pub sample_size: u32,
+    pub entries: Vec<u32>,
+}
+
+impl IO for stsz {
+    fn parse(r: &mut BytesMut) -> Self {
+        let mut rst = Self {
+            base: FullBox::parse(r),
+            sample_size: r.get_u32(),
+            entries: vec![]
+        };
+
+        if 0 == rst.sample_size {
+            let sample_count = r.get_u32();
+            for _ in 0..sample_count {
+                rst.entries.push(r.get_u32())
+            }
+        }
+
+        rst
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        w.put(self.base.as_bytes());
+
+        w.put_u32(self.sample_size);
+        w.put_u32(self.entries.len() as u32);
+
+        if 0 == self.sample_size {
+            for entry_size in &self.entries {
+                w.put_u32(*entry_size);
+            }
+        }
+
+        w
+    }
+}
+
+#[allow(non_camel_case_types)]
+pub struct stsc {
+    base: FullBox,
+
+    pub entries: Vec<(u32, u32, u32)>,
+}
+
+impl IO for stsc {
+    fn parse(r: &mut BytesMut) -> Self {
+        let mut rst = Self {
+            base: FullBox::parse(r),
+            entries: vec![]
+        };
+
+        let entry_count = r.get_u32();
+        for _ in 0..entry_count {
+            rst.entries.push((r.get_u32(), r.get_u32(), r.get_u32()))
+        }
+
+        rst
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        w.put(self.base.as_bytes());
+
+        w.put_u32(self.entries.len() as u32);
+
+        for (first_chunk, samples_per_chunk, sample_description_index) in &self.entries {
+            w.put_u32(*first_chunk);
+            w.put_u32(*samples_per_chunk);
+            w.put_u32(*sample_description_index);
+        }
+
+        w
+    }
+}
+
+#[allow(non_camel_case_types)]
+pub struct stco {
+    base: FullBox,
+
+    pub entries: Vec<u32>,
+}
+
+impl IO for stco {
+    fn parse(r: &mut BytesMut) -> Self {
+        let mut rst = Self {
+            base: FullBox::parse(r),
+            entries: vec![]
+        };
+
+        let entry_count = r.get_u32();
+        for _ in 0..entry_count {
+            rst.entries.push(r.get_u32())
+        }
+
+        rst
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        w.put(self.base.as_bytes());
+
+        w.put_u32(self.entries.len() as u32);
+
+        for chunk_offset in &self.entries {
+            w.put_u32(*chunk_offset);
+        }
+
+        w
+    }
+}
