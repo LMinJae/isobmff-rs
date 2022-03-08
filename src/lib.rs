@@ -11,7 +11,7 @@ pub struct Box {
 }
 
 impl IO for Box {
-    fn parse(mut r: &mut BytesMut) -> Self {
+    fn parse(r: &mut BytesMut) -> Self {
         let mut size = r.get_u32() as u64;
         let box_type = r.get_u32();
         if 1 == size {
@@ -56,8 +56,8 @@ pub struct ftyp {
 }
 
 impl IO for ftyp {
-    fn parse(mut r: &mut BytesMut) -> Self {
-        ftyp {
+    fn parse(r: &mut BytesMut) -> Self {
+        Self {
             major_brand: r.get_u32(),
             minor_version: r.get_u32(),
             compatible_brands: {
@@ -96,7 +96,7 @@ pub struct mvhd {
 
 impl Default for mvhd {
     fn default() -> Self {
-        mvhd {
+        Self {
             creation_time: 0,
             modification_time: 0,
             timescale: 0,
@@ -114,14 +114,14 @@ impl IO for mvhd {
         let version = r.get_u8();
         let _flags = r.split_to(3);
 
-        let mut rst = mvhd::default();
+        let mut rst = Self::default();
 
         {
             let (
                 creation_time,
                 modification_time,
                 timescale,
-                duration
+                duration,
             ) = if 1 == version {
                 (
                     r.get_u64(),
