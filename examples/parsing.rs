@@ -279,6 +279,14 @@ fn parse_stsd_entry(mut b: BytesMut) {
 
             parse_avc1(b);
         }
+        // mp4a
+        0x6d703461 => {
+            let _ = b.get_u64();
+            eprintln!("\t\t\t\t\t\t\t\tchannelcount: {:?}", b.get_u16());
+            eprintln!("\t\t\t\t\t\t\t\tsamplesize: {:?}", b.get_u16());
+            let _ = b.get_u32();
+            eprintln!("\t\t\t\t\t\t\t\tsamplerate: {:?}", b.get_u32());
+        }
         _ => {
         }
     }
