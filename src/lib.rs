@@ -82,3 +82,113 @@ impl IO for ftyp {
         w
     }
 }
+
+pub struct mvhd {
+    pub creation_time: u64,
+    pub modification_time: u64,
+    pub timescale: u32,
+    pub duration: u64,
+    pub rate: u32,
+    pub volume: u16,
+    pub matrix: [u32; 9],
+    pub next_track_id: u32,
+}
+
+impl Default for mvhd {
+    fn default() -> Self {
+        mvhd {
+            creation_time: 0,
+            modification_time: 0,
+            timescale: 0,
+            duration: 0,
+            rate: 0x00010000,
+            volume: 0x0100,
+            matrix: [0x00010000,0,0,0,0x00010000,0,0,0,0x40000000],
+            next_track_id: 0
+        }
+    }
+}
+
+impl IO for mvhd {
+    fn parse(r: &mut BytesMut) -> Self {
+        let version = r.get_u8();
+        let _flags = r.split_to(3);
+
+        let mut rst = mvhd::default();
+
+        {
+            let (
+                creation_time,
+                modification_time,
+                timescale,
+                duration
+            ) = if 1 == version {
+                (
+                    r.get_u64(),
+                    r.get_u64(),
+                    r.get_u32(),
+                    r.get_u64(),
+                )
+            } else {
+                (
+                    r.get_u32() as u64,
+                    r.get_u32() as u64,
+                    r.get_u32(),
+                    r.get_u32() as u64,
+                )
+            };
+            rst.creation_time = creation_time;
+            rst.modification_time = modification_time;
+            rst.timescale = timescale;
+            rst.duration = duration;
+        }
+
+        rst.rate = r.get_u32();
+        rst.volume = r.get_u16();
+        let _ = r.get_u16();
+        let _ = r.get_u64();
+        for it in rst.matrix.iter_mut() {
+            *it = r.get_u32();
+        }
+        let _ = r.split_to(24);
+        rst.next_track_id = r.get_u32();
+
+        rst
+    }
+
+    fn as_bytes(self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        if (u32::MAX as u64) < self.creation_time ||
+            (u32::MAX as u64) < self.modification_time ||
+            (u32::MAX as u64) < self.duration {
+            w.put_u32(0x01000000);
+
+            w.put_u64(self.creation_time);
+            w.put_u64(self.modification_time);
+            w.put_u32(self.timescale);
+            w.put_u64(self.duration);
+        } else {
+            w.put_u32(0);
+
+            w.put_u32(self.creation_time as u32);
+            w.put_u32(self.modification_time as u32);
+            w.put_u32(self.timescale);
+            w.put_u32(self.duration as u32);
+        }
+
+        w.put_u32(self.rate);
+        w.put_u16(self.volume);
+        w.put_u16(0);
+        w.put_u64(0);
+        for it in self.matrix.iter() {
+            w.put_u32(*it);
+        }
+        w.put_u64(0);
+        w.put_u64(0);
+        w.put_u64(0);
+        w.put_u32(self.next_track_id);
+
+        w
+    }
+}
