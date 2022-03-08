@@ -86,49 +86,18 @@ fn parse_trak(mut buf: BytesMut) {
         match b.box_type {
             // tkhd
             0x74_6b_68_64 => {
-                let version = b.payload.get_u32() >> 24;
-                eprintln!("\t\t\t\tversion: {:?}", version);
+                let tkhd = fmp4::tkhd::parse(&mut b.payload);
 
-                if 1 == version {
-                    let creation_time = b.payload.get_u64();
-                    let modification_time = b.payload.get_u64();
-                    let track_id = b.payload.get_u32();
-                    let _ = b.payload.get_u32();
-                    let duration = b.payload.get_u64();
+                eprintln!("\t\t\tcreation_time: {:?}", tkhd.creation_time);
+                eprintln!("\t\t\tmodification_time: {:?}", tkhd.modification_time);
+                eprintln!("\t\t\ttrack_id: {:?}", tkhd.track_id);
+                eprintln!("\t\t\t\tduration: {:?}", tkhd.duration);
 
-                    eprintln!("\t\t\t\tcreation_time: {:?}", creation_time);
-                    eprintln!("\t\t\t\tmodification_time: {:?}", modification_time);
-                    eprintln!("\t\t\t\ttrack_id: {:?}", track_id);
-                    eprintln!("\t\t\t\tduration: {:?}", duration);
-                } else {
-                    let creation_time = b.payload.get_u32();
-                    let modification_time = b.payload.get_u32();
-                    let track_id = b.payload.get_u32();
-                    let _ = b.payload.get_u32();
-                    let duration = b.payload.get_u32();
-                    eprintln!("\t\t\tcreation_time: {:?}", creation_time);
-                    eprintln!("\t\t\tmodification_time: {:?}", modification_time);
-                    eprintln!("\t\t\ttrack_id: {:?}", track_id);
-                    eprintln!("\t\t\t\tduration: {:?}", duration);
-                }
-
-                let _ = b.payload.get_u64();
-                let layer = b.payload.get_u16();
-                let alternate_group = b.payload.get_u16();
-                let volume = b.payload.get_u16();
-                let _ = b.payload.get_u16();
-                let mut matrix = [0_u32; 9];
-                for it in matrix.iter_mut() {
-                    *it = b.payload.get_u32();
-                }
-                let width = b.payload.get_u32();
-                let height = b.payload.get_u32();
-
-                eprintln!("\t\t\tlayer: {:?}", layer);
-                eprintln!("\t\t\talternate_group: {:?}", alternate_group);
-                eprintln!("\t\t\tvolume: {:?}", volume);
-                eprintln!("\t\t\twidth: {:?}", width);
-                eprintln!("\t\t\theight: {:?}", height);
+                eprintln!("\t\t\tlayer: {:?}", tkhd.layer);
+                eprintln!("\t\t\talternate_group: {:?}", tkhd.alternate_group);
+                eprintln!("\t\t\tvolume: {:?}", tkhd.volume);
+                eprintln!("\t\t\twidth: {:?}", tkhd.width);
+                eprintln!("\t\t\theight: {:?}", tkhd.height);
             }
             // mdia: Meida
             0x6d_64_69_61 => {

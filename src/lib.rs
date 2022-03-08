@@ -192,3 +192,122 @@ impl IO for mvhd {
         w
     }
 }
+
+pub struct tkhd {
+    pub creation_time: u64,
+    pub modification_time: u64,
+    pub track_id: u32,
+    pub duration: u64,
+    pub layer: u16,
+    pub alternate_group: u16,
+    pub volume: u16,
+    matrix: [u32; 9],
+    pub width: u32,
+    pub height: u32,
+}
+
+impl Default for tkhd {
+    fn default() -> Self {
+        Self {
+            creation_time: 0,
+            modification_time: 0,
+            track_id: 0,
+            duration: 0,
+            layer: 0,
+            alternate_group: 0,
+            volume: 0,
+            matrix: [0x00010000,0,0,0,0x00010000,0,0,0,0x40000000],
+            width: 0,
+            height: 0
+        }
+    }
+}
+
+impl IO for tkhd {
+    fn parse(r: &mut BytesMut) -> Self {
+        let version = r.get_u8();
+        let _flags = r.split_to(3);
+
+        let mut rst = Self::default();
+
+        {
+            let (
+                creation_time,
+                modification_time,
+                track_id,
+                _,
+                duration,
+            ) = if 1 == version {
+                (
+                    r.get_u64(),
+                    r.get_u64(),
+                    r.get_u32(),
+                    r.get_u32(),
+                    r.get_u64(),
+                )
+            } else {
+                (
+                    r.get_u32() as u64,
+                    r.get_u32() as u64,
+                    r.get_u32(),
+                    r.get_u32(),
+                    r.get_u32() as u64,
+                )
+            };
+            rst.creation_time = creation_time;
+            rst.modification_time = modification_time;
+            rst.track_id = track_id;
+            rst.duration = duration;
+        }
+
+        let _ = r.get_u64();
+        rst.layer = r.get_u16();
+        rst.alternate_group = r.get_u16();
+        rst.volume = r.get_u16();
+        let _ = r.get_u16();
+        for it in rst.matrix.iter_mut() {
+            *it = r.get_u32();
+        }
+        rst.width = r.get_u32();
+        rst.height = r.get_u32();
+
+        rst
+    }
+
+    fn as_bytes(self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        if (u32::MAX as u64) < self.creation_time ||
+            (u32::MAX as u64) < self.modification_time ||
+            (u32::MAX as u64) < self.duration {
+            w.put_u32(0x01000000);
+
+            w.put_u64(self.creation_time);
+            w.put_u64(self.modification_time);
+            w.put_u32(self.track_id);
+            w.put_u32(0);
+            w.put_u64(self.duration);
+        } else {
+            w.put_u32(0);
+
+            w.put_u32(self.creation_time as u32);
+            w.put_u32(self.modification_time as u32);
+            w.put_u32(self.track_id);
+            w.put_u32(0);
+            w.put_u32(self.duration as u32);
+        }
+
+        w.put_u64(0);
+        w.put_u16(self.layer);
+        w.put_u16(self.alternate_group);
+        w.put_u16(self.volume);
+        w.put_u16(0);
+        for it in self.matrix.iter() {
+            w.put_u32(*it);
+        }
+        w.put_u32(self.width);
+        w.put_u32(self.height);
+
+        w
+    }
+}
