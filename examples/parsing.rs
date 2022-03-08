@@ -141,44 +141,8 @@ fn parse_minf(mut buf: BytesMut) {
             }
             // stbl: Sample Table
             0x7374626c => {
-                parse_stbl(b.payload);
-            }
-            _ => {
-            }
-        }
-    }
-}
-
-fn parse_stbl(mut buf: BytesMut) {
-    while 0 < buf.len() {
-        let mut b = fmp4::Box::parse(&mut buf);
-
-        eprintln!("\t\t\t\t\t0x{:08x?}: {:?}", b.box_type, std::str::from_utf8(&b.box_type.to_be_bytes()).unwrap_or(""));
-        match b.box_type {
-            // stsd: Sample Description
-            0x73747364 => {
-                let stsd = fmp4::stsd::parse(&mut b.payload);
-                eprintln!("{:?}", stsd);
-            }
-            // stts: Decoding Time to Sample
-            0x73747473 => {
-                let stts = fmp4::stts::parse(&mut b.payload);
-                eprintln!("{:?}", stts);
-            }
-            // stsc: Sample To Chunk
-            0x73747363 => {
-                let stsc = fmp4::stsc::parse(&mut b.payload);
-                eprintln!("{:?}", stsc);
-            }
-            // stsz: Sample Size
-            0x7374737a => {
-                let stsz = fmp4::stsz::parse(&mut b.payload);
-                eprintln!("{:?}", stsz);
-            }
-            // stco: Chunk Offset
-            0x7374636f => {
-                let stco = fmp4::stco::parse(&mut b.payload);
-                eprintln!("{:?}", stco);
+                let stbl = fmp4::stbl::parse(&mut b.payload);
+                eprintln!("{:?}", stbl);
             }
             _ => {
             }

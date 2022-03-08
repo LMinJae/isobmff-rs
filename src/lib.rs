@@ -775,6 +775,102 @@ impl IO for dref {
 }
 
 #[allow(non_camel_case_types)]
+pub struct stbl {
+    stsd: stsd,
+    stts: stts,
+    stsc: stsc,
+    stsz: stsz,
+    stco: stco,
+}
+
+impl Debug for stbl {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\t\t\t\t0x73747364: \"stsd\""))?;
+        f.write_fmt(format_args!("\n{:?}", self.stsd))?;
+        f.write_fmt(format_args!("\n\t\t\t\t\t0x73747473: \"stts\""))?;
+        f.write_fmt(format_args!("\n{:?}", self.stts))?;
+        f.write_fmt(format_args!("\n\t\t\t\t\t0x7374737a: \"stsz\""))?;
+        f.write_fmt(format_args!("\n{:?}", self.stsz))?;
+        f.write_fmt(format_args!("\n\t\t\t\t\t0x73747363: \"stsc\""))?;
+        f.write_fmt(format_args!("\n{:?}", self.stsc))?;
+        f.write_fmt(format_args!("\n\t\t\t\t\t0x7374636f: \"stco\""))?;
+        f.write_fmt(format_args!("\n{:?}", self.stco))?;
+
+        Ok(())
+    }
+}
+
+impl IO for stbl {
+    fn parse(r: &mut BytesMut) -> Self {
+        let mut rst = Self {
+            stsd: stsd { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
+            stts: stts { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
+            stsc: stsc { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
+            stsz: stsz { base: FullBox { version: 0, flags: 0 }, sample_size: 0, entries: vec![] },
+            stco: stco { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
+        };
+
+        while 0 < r.len() {
+            let mut b = Box::parse(r);
+
+            match b.box_type {
+                // stsd: Sample Description
+                0x73747364 => {
+                    rst.stsd = stsd::parse(&mut b.payload);
+                }
+                // stts: Decoding Time to Sample
+                0x73747473 => {
+                    rst.stts = stts::parse(&mut b.payload);
+                }
+                // stsc: Sample To Chunk
+                0x73747363 => {
+                    rst.stsc = stsc::parse(&mut b.payload);
+                }
+                // stsz: Sample Size
+                0x7374737a => {
+                    rst.stsz = stsz::parse(&mut b.payload);
+                }
+                // stco: Chunk Offset
+                0x7374636f => {
+                    rst.stco = stco::parse(&mut b.payload);
+                }
+                _ => {
+                }
+            }
+        }
+
+        rst
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        w.put(Box {
+            box_type: 0x73747364,
+            payload: self.stsd.as_bytes(),
+        }.as_bytes());
+        w.put(Box {
+            box_type: 0x73747473,
+            payload: self.stts.as_bytes(),
+        }.as_bytes());
+        w.put(Box {
+            box_type: 0x73747363,
+            payload: self.stsc.as_bytes(),
+        }.as_bytes());
+        w.put(Box {
+            box_type: 0x7374737a,
+            payload: self.stsz.as_bytes(),
+        }.as_bytes());
+        w.put(Box {
+            box_type: 0x7374636f,
+            payload: self.stco.as_bytes(),
+        }.as_bytes());
+
+        w
+    }
+}
+
+#[allow(non_camel_case_types)]
 pub struct stsd {
     base: FullBox,
 
