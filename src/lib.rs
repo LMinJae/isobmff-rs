@@ -470,3 +470,31 @@ impl IO for hdlr {
         w
     }
 }
+
+#[allow(non_camel_case_types)]
+struct url_ {
+    base: FullBox,
+
+    location: String,
+}
+
+impl IO for url_ {
+    fn parse(r: &mut BytesMut) -> Self {
+        let base = FullBox::parse(r);
+
+        Self {
+            base,
+            location: std::str::from_utf8(r.split_to(r.len()).chunk()).unwrap().to_string(),
+        }
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        w.put(self.base.as_bytes());
+
+        w.put(self.location.as_bytes());
+
+        w
+    }
+}
