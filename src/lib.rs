@@ -1,3 +1,4 @@
+use std::fmt::{Debug, Formatter};
 use bytes::{Buf, BufMut, BytesMut};
 
 pub trait IO {
@@ -80,6 +81,28 @@ pub struct ftyp {
     pub compatible_brands: Vec<u32>,
 }
 
+impl Debug for ftyp {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\tmajor_brand:"))?;
+        if let Ok(str) = std::str::from_utf8(&self.major_brand.to_be_bytes()) {
+            f.write_fmt(format_args!(" {:?}", str))?;
+        } else {
+            f.write_fmt(format_args!(" 0x{:08?}", self.major_brand))?;
+        }
+        f.write_fmt(format_args!("\n\tminor_version: {:?}", self.minor_version))?;
+        f.write_fmt(format_args!("\n\tcompatible_brands:"))?;
+        for it in &self.compatible_brands {
+            if let Ok(str) = std::str::from_utf8(&it.to_be_bytes()) {
+                f.write_fmt(format_args!(" {:?}", str))?;
+            } else {
+                f.write_fmt(format_args!(" 0x{:08?}", it))?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
 impl IO for ftyp {
     fn parse(r: &mut BytesMut) -> Self {
         Self {
@@ -118,6 +141,28 @@ pub struct mvhd {
     pub volume: u16,
     pub matrix: [u32; 9],
     pub next_track_id: u32,
+}
+
+impl Debug for mvhd {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\tcreation_time: {:?}", self.creation_time))?;
+        f.write_fmt(format_args!("\n\t\tmodification_time: {:?}", self.modification_time))?;
+        f.write_fmt(format_args!("\n\t\ttimescale: {:?}", self.timescale))?;
+        f.write_fmt(format_args!("\n\t\tduration: {:?}", self.duration))?;
+        f.write_fmt(format_args!("\n\t\trate: {:?}", self.rate))?;
+        f.write_fmt(format_args!("\n\t\tvolume: {:?}", self.volume))?;
+        f.write_fmt(format_args!("\n\t\tmatrix: ["))?;
+        for i in 0..9 {
+            if 0 == i % 3 {
+                f.write_fmt(format_args!("\n\t\t\t"))?;
+            }
+            f.write_fmt(format_args!("0x{:08x?}, ",self.matrix[i]))?;
+        }
+        f.write_fmt(format_args!("\n\t\t]"))?;
+        f.write_fmt(format_args!("\n\t\tnext_track_ID: {:?}", self.next_track_id))?;
+
+        Ok(())
+    }
 }
 
 impl Default for mvhd {
@@ -233,6 +278,23 @@ pub struct tkhd {
     matrix: [u32; 9],
     pub width: u32,
     pub height: u32,
+}
+
+impl Debug for tkhd {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\t\tcreation_time: {:?}", self.creation_time))?;
+        f.write_fmt(format_args!("\n\t\t\tmodification_time: {:?}", self.modification_time))?;
+        f.write_fmt(format_args!("\n\t\t\ttrack_id: {:?}", self.track_id))?;
+        f.write_fmt(format_args!("\n\t\t\tduration: {:?}", self.duration))?;
+
+        f.write_fmt(format_args!("\n\t\t\tlayer: {:?}", self.layer))?;
+        f.write_fmt(format_args!("\n\t\t\talternate_group: {:?}", self.alternate_group))?;
+        f.write_fmt(format_args!("\n\t\t\tvolume: {:?}", self.volume))?;
+        f.write_fmt(format_args!("\n\t\t\twidth: {:?}", self.width))?;
+        f.write_fmt(format_args!("\n\t\t\theight: {:?}", self.height))?;
+
+        Ok(())
+    }
 }
 
 impl Default for tkhd {
@@ -353,6 +415,24 @@ pub struct mdhd {
     pub language: u16,
 }
 
+impl Debug for mdhd {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\t\t\tcreation_time: {:?}", self.creation_time))?;
+        f.write_fmt(format_args!("\n\t\t\t\tmodification_time: {:?}", self.modification_time))?;
+        f.write_fmt(format_args!("\n\t\t\t\ttimescale: {:?}", self.timescale))?;
+        f.write_fmt(format_args!("\n\t\t\t\tduration: {:?}", self.duration))?;
+
+        f.write_fmt(format_args!("\n\t\t\t\tlanguage: "))?;
+        f.write_fmt(format_args!("{:}", String::from_utf8_lossy(&[
+            0x60 + (0b11111 & (self.language >> 10)) as u8,
+            0x60 + (0b11111 & (self.language >> 5)) as u8,
+            0x60 + (0b11111 & self.language) as u8,
+        ])))?;
+
+        Ok(())
+    }
+}
+
 impl IO for mdhd {
     fn parse(r: &mut BytesMut) -> Self {
         let version = r.get_u8();
@@ -438,6 +518,15 @@ pub struct hdlr {
     pub name: String,
 }
 
+impl Debug for hdlr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\t\t\thandler_type: {:?}", self.handler_type))?;
+        f.write_fmt(format_args!("\n\t\t\t\tname: {:?}", self.name))?;
+
+        Ok(())
+    }
+}
+
 impl IO for hdlr {
     fn parse(r: &mut BytesMut) -> Self {
         let base = FullBox::parse(r);
@@ -478,6 +567,15 @@ pub struct vmhd {
     pub opcolor: [u16; 3],
 }
 
+impl Debug for vmhd {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\t\t\t\tgraphicsmode: {:?}", self.graphicsmode))?;
+        f.write_fmt(format_args!("\n\t\t\t\t\topcolor: {:?}", self.opcolor))?;
+
+        Ok(())
+    }
+}
+
 impl IO for vmhd {
     fn parse(r: &mut BytesMut) -> Self {
         let base = FullBox::parse(r);
@@ -514,6 +612,14 @@ pub struct smhd {
     pub balance: u16,
 }
 
+impl Debug for smhd {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\t\t\t\tbalance: {:?}", self.balance))?;
+
+        Ok(())
+    }
+}
+
 impl IO for smhd {
     fn parse(r: &mut BytesMut) -> Self {
         let base = FullBox::parse(r);
@@ -538,6 +644,21 @@ impl IO for smhd {
 #[allow(non_camel_case_types)]
 pub struct dinf {
     pub dref: dref,
+}
+
+impl Debug for dinf {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\t\t\t\t0x64726566: \"dref\""))?;
+        for it in &self.dref.entries {
+            match it {
+                DataEntry::url_ { base, .. } => {
+                    f.write_fmt(format_args!("\n\t\t\t\t\t\tflags: {:?}", base.flags))?;
+                }
+            }
+        }
+
+        Ok(())
+    }
 }
 
 impl IO for dinf {
@@ -649,11 +770,97 @@ impl IO for dref {
     }
 }
 
+#[derive(Clone)]
+pub enum SampleEntry {
+    Base {
+        handler_type: u32,
+        data_reference_index: u16,
+    },
+    Visual {
+        base: std::boxed::Box<SampleEntry>,
+
+        width: u16,
+        height: u16,
+        horiz_resolution: u32,
+        vert_resolution: u32,
+        frame_count: u16,
+        compressor_name: String,
+        depth: u16,
+    },
+    Audio {
+        base: std::boxed::Box<SampleEntry>,
+
+        channel_count: u16,
+        sample_size: u16,
+        sample_rate: u32,
+    }
+}
+
+impl Debug for SampleEntry {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SampleEntry::Base {
+                handler_type,
+                data_reference_index,
+            } => {
+                f.write_fmt(format_args!("\t\t\t\t\t\t\tformat: 0x{:08x?}: {:?}", handler_type, std::str::from_utf8(&handler_type.to_be_bytes()).unwrap_or("")))?;
+                f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\tdata_reference_index: {:?}", data_reference_index))?;
+            }
+            SampleEntry::Visual {
+                base,
+                width,
+                height,
+                horiz_resolution,
+                vert_resolution,
+                frame_count,
+                compressor_name,
+                depth ,
+            } => {
+                f.write_fmt(format_args!("{:?}", base))?;
+
+                f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\twidth: {:?}", width))?;
+                f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\theight: {:?}", height))?;
+                f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\thoriz_resolution: {:?}", horiz_resolution))?;
+                f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\tvert_resolution: {:?}", vert_resolution))?;
+                f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\tframe_count: {:?}", frame_count))?;
+                f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\tcompressor_name: {:?}", compressor_name))?;
+                f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\tdepth: {:?}", depth))?;
+            }
+            SampleEntry::Audio {
+                base,
+                channel_count,
+                sample_size,
+                sample_rate,
+            } => {
+                f.write_fmt(format_args!("{:?}", base))?;
+
+                f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\tchannel_count: {:?}", channel_count))?;
+                f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\tsample_size: {:?}", sample_size))?;
+                f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\tsample_rate: {:?}", sample_rate))?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
 #[allow(non_camel_case_types)]
 pub struct stts {
     base: FullBox,
 
     pub entries: Vec<(u32, u32)>,
+}
+
+impl Debug for stts {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\t\t\t\t\tentry_count: {:?}", self.entries.len()))?;
+        for (sample_count, sample_delta) in &self.entries {
+            f.write_fmt(format_args!("\n\t\t\t\t\t\t\tsample_count: {:?}", sample_count))?;
+            f.write_fmt(format_args!("\n\t\t\t\t\t\t\tsample_delta: {:?}", sample_delta))?;
+        }
+
+        Ok(())
+    }
 }
 
 impl IO for stts {
@@ -694,6 +901,19 @@ pub struct stsc {
     pub entries: Vec<(u32, u32, u32)>,
 }
 
+impl Debug for stsc {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\t\t\t\t\tentry_count: {:?}", self.entries.len()))?;
+        for (first_chunk, samples_per_chunk, sample_description_index) in &self.entries {
+            f.write_fmt(format_args!("\n\t\t\t\t\t\t\tfirst_chunk: {:?}", first_chunk))?;
+            f.write_fmt(format_args!("\n\t\t\t\t\t\t\tsamples_per_chunk: {:?}", samples_per_chunk))?;
+            f.write_fmt(format_args!("\n\t\t\t\t\t\t\tsample_description_index: {:?}", sample_description_index))?;
+        }
+
+        Ok(())
+    }
+}
+
 impl IO for stsc {
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self {
@@ -732,6 +952,18 @@ pub struct stsz {
 
     pub sample_size: u32,
     pub entries: Vec<u32>,
+}
+
+impl Debug for stsz {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\t\t\t\t\tsample_size: {:?}", self.sample_size))?;
+        f.write_fmt(format_args!("\n\t\t\t\t\t\tsample_count: {:?}", self.entries.len()))?;
+        if 0 == self.sample_size && 0 < self.entries.len() {
+            f.write_fmt(format_args!("\n\t\t\t\t\t\t\tentry: {:?}", self.entries))?;
+        }
+
+        Ok(())
+    }
 }
 
 impl IO for stsz {
@@ -777,6 +1009,17 @@ pub struct stco {
     pub entries: Vec<u32>,
 }
 
+impl Debug for stco {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\t\t\t\t\tentry_count: {:?}", self.entries.len()))?;
+        for chunk_offset in &self.entries {
+            f.write_fmt(format_args!("\n\t\t\t\t\t\t\tchunk_offset: {:?}", chunk_offset))?;
+        }
+
+        Ok(())
+    }
+}
+
 impl IO for stco {
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self {
@@ -814,6 +1057,14 @@ pub struct mfhd {
     pub sequence_number: u32,
 }
 
+impl Debug for mfhd {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\tsequence_number: {:?}", self.sequence_number))?;
+
+        Ok(())
+    }
+}
+
 impl IO for mfhd {
     fn parse(r: &mut BytesMut) -> Self {
         Self {
@@ -842,6 +1093,33 @@ pub struct tfhd {
     pub default_sample_duration: Option<u32>,
     pub default_sample_size: Option<u32>,
     pub default_sample_flags: Option<u32>,
+}
+
+impl Debug for tfhd {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\t\tflags: {:?}", self.base.flags))?;
+
+        f.write_fmt(format_args!("\n\t\t\ttrack_id: {:?}", self.track_id))?;
+
+        // optional
+        if 0 != (0x000001 & self.base.flags) {
+            f.write_fmt(format_args!("\n\t\t\tbase_data_offset: {:?}", self.base_data_offset))?;
+        }
+        if 0 != (0x000002 & self.base.flags) {
+            f.write_fmt(format_args!("\n\t\t\tsample_description_index: {:?}", self.sample_description_index))?;
+        }
+        if 0 != (0x000008 & self.base.flags) {
+            f.write_fmt(format_args!("\n\t\t\tdefault_sample_duration: {:?}", self.default_sample_duration))?;
+        }
+        if 0 != (0x000010 & self.base.flags) {
+            f.write_fmt(format_args!("\n\t\t\tdefault_sample_size: {:?}", self.default_sample_size))?;
+        }
+        if 0 != (0x000020 & self.base.flags) {
+            f.write_fmt(format_args!("\n\t\t\tdefault_sample_flags: {:?}", self.default_sample_flags))?;
+        }
+
+        Ok(())
+    }
 }
 
 impl IO for tfhd {
@@ -926,6 +1204,44 @@ pub struct trun {
     pub data_offset: Option<u32>,
     pub first_sample_flags: Option<u32>,
     pub samples: Vec<(Option<u32>, Option<u32>, Option<u32>, Option<u32>)>
+}
+
+impl Debug for trun {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\t\tflags: 0x{:08x?}", self.base.flags))?;
+
+       f.write_fmt(format_args!("\n\t\t\tsample_count: {:?}", self.samples.len()))?;
+        if 0 != (0x000001 & self.base.flags) {
+            f.write_fmt(format_args!("\n\t\t\tdata_offset: {:?}", self.data_offset))?;
+        }
+        if 0 != (0x000004 & self.base.flags) {
+            f.write_fmt(format_args!("\n\t\t\tfirst_sample_flags: {:?}", self.first_sample_flags))?;
+        }
+
+        for (
+            sample_duration,
+            sample_size,
+            sample_flags,
+            sample_composition_time_offset,
+        ) in &self.samples {
+            f.write_fmt(format_args!("\n\t\t\t{{"))?;
+            if let Some(n) = sample_duration {
+                f.write_fmt(format_args!("\n\t\t\t\tsample_duration: {:?}", n))?;
+            }
+            if let Some(n) = sample_size {
+                f.write_fmt(format_args!("\n\t\t\t\tsample_size: {:?}", n))?;
+            }
+            if let Some(n) = sample_flags {
+                f.write_fmt(format_args!("\n\t\t\t\tsample_flags: {:?}", n))?;
+            }
+            if let Some(n) = sample_composition_time_offset {
+                f.write_fmt(format_args!("\n\t\t\t\tsample_composition_time_offset: {:?}", n))?;
+            }
+            f.write_fmt(format_args!("\n\t\t\t}}"))?;
+        }
+
+        Ok(())
+    }
 }
 
 impl IO for trun {

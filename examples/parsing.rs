@@ -25,9 +25,7 @@ fn parse(mut buf: BytesMut) {
             // ftyp: FileTypeBox
             0x66_74_79_70 => {
                 let ftyp = fmp4::ftyp::parse(&mut b.payload);
-                eprintln!("\tmajor_brand: {:?}", std::str::from_utf8(&ftyp.major_brand.to_be_bytes()).unwrap_or(""));
-                eprintln!("\tminor_version: {:?}", ftyp.minor_version);
-                eprintln!("\tcompatible_brands: {:?}", ftyp.compatible_brands);
+                eprintln!("{:?}", ftyp);
             }
             // moov: MovieBox
             0x6d_6f_6f_76 => {
@@ -57,16 +55,7 @@ fn parse_moov(mut buf: BytesMut) {
             // mvhd: Movie Header
             0x6d_76_68_64 => {
                 let mvhd = fmp4::mvhd::parse(&mut b.payload);
-
-                eprintln!("\t\tcreation_time: {:?}", mvhd.creation_time);
-                eprintln!("\t\tmodification_time: {:?}", mvhd.modification_time);
-                eprintln!("\t\ttimescale: {:?}", mvhd.timescale);
-                eprintln!("\t\tduration: {:?}", mvhd.duration);
-
-                eprintln!("\t\trate: {:?}", mvhd.rate);
-                eprintln!("\t\tvolume: {:?}", mvhd.volume);
-                eprintln!("\t\tmatrix: {:?}", mvhd.matrix);
-                eprintln!("\t\tnext_track_ID: {:?}", mvhd.next_track_id);
+                eprintln!("{:?}", mvhd);
             }
             // trak: Track
             0x74_72_61_6b => {
@@ -87,17 +76,7 @@ fn parse_trak(mut buf: BytesMut) {
             // tkhd
             0x74_6b_68_64 => {
                 let tkhd = fmp4::tkhd::parse(&mut b.payload);
-
-                eprintln!("\t\t\tcreation_time: {:?}", tkhd.creation_time);
-                eprintln!("\t\t\tmodification_time: {:?}", tkhd.modification_time);
-                eprintln!("\t\t\ttrack_id: {:?}", tkhd.track_id);
-                eprintln!("\t\t\t\tduration: {:?}", tkhd.duration);
-
-                eprintln!("\t\t\tlayer: {:?}", tkhd.layer);
-                eprintln!("\t\t\talternate_group: {:?}", tkhd.alternate_group);
-                eprintln!("\t\t\tvolume: {:?}", tkhd.volume);
-                eprintln!("\t\t\twidth: {:?}", tkhd.width);
-                eprintln!("\t\t\theight: {:?}", tkhd.height);
+                eprintln!("{:?}", tkhd);
             }
             // mdia: Meida
             0x6d_64_69_61 => {
@@ -119,19 +98,13 @@ fn parse_mdia(mut buf: BytesMut) {
             0x6d_64_68_64 => {
                 let mdhd = fmp4::mdhd::parse(&mut b.payload);
 
-                eprintln!("\t\t\t\tcreation_time: {:?}", mdhd.creation_time);
-                eprintln!("\t\t\t\tmodification_time: {:?}", mdhd.modification_time);
-                eprintln!("\t\t\t\ttimescale: {:?}", mdhd.timescale);
-                eprintln!("\t\t\t\tduration: {:?}", mdhd.duration);
-
-                eprintln!("\t\t\t\tlanguage: {:?}", mdhd.language);
+                eprintln!("{:?}", mdhd);
             }
             // hdlr: Handler Reference
             0x68646c72 => {
                 let hdlr = fmp4::hdlr::parse(&mut b.payload);
 
-                eprintln!("\t\t\t\thandler_type: {:?}", hdlr.handler_type);
-                eprintln!("\t\t\t\tname: {:?}", hdlr.name);
+                eprintln!("{:?}", hdlr);
             }
             // minf: Midia Information
             0x6d696e66 => {
@@ -153,26 +126,17 @@ fn parse_minf(mut buf: BytesMut) {
             0x766d6864 => {
                 let vmhd = fmp4::vmhd::parse(&mut b.payload);
 
-                eprintln!("\t\t\t\t\tgraphicsmode: {:?}", vmhd.graphicsmode);
-                eprintln!("\t\t\t\t\topcolor: {:?}", vmhd.opcolor);
+                eprintln!("{:?}", vmhd);
             }
             // smhd: Sound Media Header
             0x736d6864 => {
                 let smhd = fmp4::smhd::parse(&mut b.payload);
-
-                eprintln!("\t\t\t\t\tbalance: {:?}", smhd.balance);
+                eprintln!("{:?}", smhd);
             }
             // dinf: Data Information
             0x64696e66 => {
                 let dinf = fmp4::dinf::parse(&mut b.payload);
-                eprintln!("\t\t\t\t\t0x64726566: \"dref\"");
-                for it in dinf.dref.entries {
-                    match it {
-                        fmp4::DataEntry::url_ { base, .. } => {
-                            eprintln!("\t\t\t\t\t\tflags: {:?}", base.flags);
-                        }
-                    }
-                }
+                eprintln!("{:?}", dinf);
             }
             // stbl: Sample Table
             0x7374626c => {
@@ -193,11 +157,7 @@ fn parse_stbl(mut buf: BytesMut) {
             // stts: Decoding Time to Sample
             0x73747473 => {
                 let stts = fmp4::stts::parse(&mut b.payload);
-                eprintln!("\t\t\t\t\t\tentry_count: {:?}", stts.entries.len());
-                for (sample_count, sample_delta) in stts.entries {
-                    eprintln!("\t\t\t\t\t\t\tsample_count: {:?}", sample_count);
-                    eprintln!("\t\t\t\t\t\t\tsample_delta: {:?}", sample_delta);
-                }
+                eprintln!("{:?}", stts);
             }
             // stsd: Sample Description
             0x73747364 => {
@@ -214,31 +174,17 @@ fn parse_stbl(mut buf: BytesMut) {
             // stsz: Sample Size
             0x7374737a => {
                 let stsz = fmp4::stsz::parse(&mut b.payload);
-
-                eprintln!("\t\t\t\t\t\tsample_size: {:?}", stsz.sample_size);
-                eprintln!("\t\t\t\t\t\tsample_count: {:?}", stsz.entries.len());
-                if 0 == stsz.sample_size && 0 < stsz.entries.len() {
-                    eprintln!("\t\t\t\t\t\t\tentry: {:?}", stsz.entries);
-                }
+                eprintln!("{:?}", stsz);
             }
             // stsc: Sample To Chunk
             0x73747363 => {
                 let stsc = fmp4::stsc::parse(&mut b.payload);
-                eprintln!("\t\t\t\t\t\tentry_count: {:?}", stsc.entries.len());
-                for (first_chunk, samples_per_chunk, sample_description_index) in stsc.entries {
-                    eprintln!("\t\t\t\t\t\t\tfirst_chunk: {:?}", first_chunk);
-                    eprintln!("\t\t\t\t\t\t\tsamples_per_chunk: {:?}", samples_per_chunk);
-                    eprintln!("\t\t\t\t\t\t\tsample_description_index: {:?}", sample_description_index);
-                }
+                eprintln!("{:?}", stsc);
             }
             // stco: Chunk Offset
             0x7374636f => {
                 let stco = fmp4::stco::parse(&mut b.payload);
-
-                eprintln!("\t\t\t\t\t\tentry_count: {:?}", stco.entries.len());
-                for chunk_offset in stco.entries {
-                    eprintln!("\t\t\t\t\t\t\tchunk_offset: {:?}", chunk_offset);
-                }
+                eprintln!("{:?}", stco);
             }
             _ => {
             }
@@ -247,47 +193,68 @@ fn parse_stbl(mut buf: BytesMut) {
 }
 
 fn parse_stsd_entry(mut b: BytesMut) {
-    let format = b.get_u32();
-    eprintln!("\t\t\t\t\t\t\tformat: 0x{:08x?}: {:?}", format, std::str::from_utf8(&format.to_be_bytes()).unwrap_or(""));
+    let handler_type = b.get_u32();
     let _ = b.split_to(6);
     let data_reference_index = b.get_u16();
-    eprintln!("\t\t\t\t\t\t\t\tdata_reference_index: {:?}", data_reference_index);
 
-    match format {
+    let base = Box::new(fmp4::SampleEntry::Base {
+        handler_type,
+        data_reference_index,
+    });
+
+    match handler_type {
         // avc1
         0x61766331 => {
-            let _ = b.get_u16();
-            let _ = b.get_u16();
-            let _ = b.split_to(12);
-            let width = b.get_u16();
-            let height = b.get_u16();
-            let horizresolution = b.get_u32();
-            let vertresolution = b.get_u32();
-            let _ = b.get_u32();
-            let frame_count = b.get_u16();
-            let compressorname = b.split_to(32);
-            let depth = b.get_u16();
-            let _ = b.get_u16();
+            let avc1 = {
+                let _ = b.get_u16();
+                let _ = b.get_u16();
+                let _ = b.split_to(12);
+                let width = b.get_u16();
+                let height = b.get_u16();
+                let horiz_resolution = b.get_u32();
+                let vert_resolution = b.get_u32();
+                let _ = b.get_u32();
+                let frame_count = b.get_u16();
+                let compressor_name = std::str::from_utf8(b.split_to(32).chunk()).unwrap_or("").to_owned();
+                let depth = b.get_u16();
+                let _ = b.get_u16();
 
-            eprintln!("\t\t\t\t\t\t\t\twidth: {:?}", width);
-            eprintln!("\t\t\t\t\t\t\t\theight: {:?}", height);
-            eprintln!("\t\t\t\t\t\t\t\thorizresolution: {:?}", horizresolution);
-            eprintln!("\t\t\t\t\t\t\t\tvertresolution: {:?}", vertresolution);
-            eprintln!("\t\t\t\t\t\t\t\tframe_count: {:?}", frame_count);
-            eprintln!("\t\t\t\t\t\t\t\tcompressorname: {:?}", compressorname);
-            eprintln!("\t\t\t\t\t\t\t\tdepth: {:?}", depth);
+                fmp4::SampleEntry::Visual {
+                    base: base.clone(),
+                    width,
+                    height,
+                    horiz_resolution,
+                    vert_resolution,
+                    frame_count,
+                    compressor_name,
+                    depth,
+                }
+            };
+
+            eprintln!("{:?}", avc1);
 
             parse_avc1(b);
         }
         // mp4a
         0x6d703461 => {
-            let _ = b.get_u64();
-            eprintln!("\t\t\t\t\t\t\t\tchannelcount: {:?}", b.get_u16());
-            eprintln!("\t\t\t\t\t\t\t\tsamplesize: {:?}", b.get_u16());
-            let _ = b.get_u32();
-            eprintln!("\t\t\t\t\t\t\t\tsamplerate: {:?}", b.get_u32());
+            let mp4a = {
+                let _ = b.get_u64();
+                let channel_count = b.get_u16();
+                let sample_size = b.get_u16();
+                let _ = b.get_u32();
+                let sample_rate = b.get_u32();
+                fmp4::SampleEntry::Audio {
+                    base: base.clone(),
+                    channel_count,
+                    sample_size,
+                    sample_rate,
+                }
+            };
+
+            eprintln!("{:?}", mp4a);
         }
         _ => {
+            eprintln!("{:?}", base);
         }
     }
 }
@@ -338,8 +305,7 @@ fn parse_moof(mut buf: BytesMut) {
             // mfhd:
             0x6d666864 => {
                 let mfhd = fmp4::mfhd::parse(&mut b.payload);
-
-                eprintln!("\t\tsequence_number: {:?}", mfhd.sequence_number);
+                eprintln!("{:?}", mfhd);
             }
             // traf:
             0x74726166 => {
@@ -361,60 +327,12 @@ fn parse_traf(mut buf: BytesMut) {
             // tfhd:
             0x74666864 => {
                 let tfhd = fmp4::tfhd::parse(&mut b.payload);
-                eprintln!("\t\t\tflags: {:?}", tfhd.base.flags);
-
-                eprintln!("\t\t\ttrack_id: {:?}", tfhd.track_id);
-
-                // optional
-                if 0 != (0x000001 & tfhd.base.flags) {
-                    eprintln!("\t\t\tbase_data_offset: {:?}", tfhd.base_data_offset);
-                }
-                if 0 != (0x000002 & tfhd.base.flags) {
-                    eprintln!("\t\t\tsample_description_index: {:?}", tfhd.sample_description_index);
-                }
-                if 0 != (0x000008 & tfhd.base.flags) {
-                    eprintln!("\t\t\tdefault_sample_duration: {:?}", tfhd.default_sample_duration);
-                }
-                if 0 != (0x000010 & tfhd.base.flags) {
-                    eprintln!("\t\t\tdefault_sample_size: {:?}", tfhd.default_sample_size);
-                }
-                if 0 != (0x000020 & tfhd.base.flags) {
-                    eprintln!("\t\t\tdefault_sample_flags: {:?}", tfhd.default_sample_flags);
-                }
+                eprintln!("{:?}", tfhd);
             }
             // trun: Track Fragment Run
             0x7472756e => {
                 let trun = fmp4::trun::parse(&mut b.payload);
-                eprintln!("\t\t\tflags: {:?}", trun.base.flags);
-
-                eprintln!("\t\t\tsample_count: {:?}", trun.samples.len());
-                if 0 != (0x000001 & trun.base.flags) {
-                    eprintln!("\t\t\tdata_offset: {:?}", trun.data_offset);
-                }
-                if 0 != (0x000004 & trun.base.flags) {
-                    eprintln!("\t\t\tfirst_sample_flags: {:?}", trun.first_sample_flags);
-                }
-
-                for (
-                    sample_duration,
-                    sample_size,
-                    sample_flags,
-                    sample_composition_time_offset,
-                ) in trun.samples {
-                    eprintln!();
-                    if let Some(n) = sample_duration {
-                        eprintln!("\t\t\tsample_duration: {:?}", n);
-                    }
-                    if let Some(n) = sample_size {
-                        eprintln!("\t\t\tsample_size: {:?}", n);
-                    }
-                    if let Some(n) = sample_flags {
-                        eprintln!("\t\t\tsample_flags: {:?}", n);
-                    }
-                    if let Some(n) = sample_composition_time_offset {
-                        eprintln!("\t\t\tsample_composition_time_offset: {:?}", n);
-                    }
-                }
+                eprintln!("{:?}", trun);
             }
             _ => {
             }
