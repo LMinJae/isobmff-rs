@@ -49,6 +49,7 @@ impl IO for Box {
     }
 }
 
+#[allow(non_camel_case_types)]
 pub struct ftyp {
     pub major_brand: u32,
     pub minor_version: u32,
@@ -83,6 +84,7 @@ impl IO for ftyp {
     }
 }
 
+#[allow(non_camel_case_types)]
 pub struct mvhd {
     pub creation_time: u64,
     pub modification_time: u64,
@@ -193,6 +195,7 @@ impl IO for mvhd {
     }
 }
 
+#[allow(non_camel_case_types)]
 pub struct tkhd {
     pub creation_time: u64,
     pub modification_time: u64,
@@ -312,6 +315,7 @@ impl IO for tkhd {
     }
 }
 
+#[allow(non_camel_case_types)]
 pub struct mdhd {
     pub creation_time: u64,
     pub modification_time: u64,
@@ -394,7 +398,7 @@ impl IO for mdhd {
     }
 }
 
-
+#[allow(non_camel_case_types)]
 pub struct hdlr {
     pub handler_type: u32,
     pub name: String,
