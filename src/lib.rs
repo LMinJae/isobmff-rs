@@ -688,6 +688,45 @@ impl IO for stts {
 }
 
 #[allow(non_camel_case_types)]
+pub struct stsc {
+    base: FullBox,
+
+    pub entries: Vec<(u32, u32, u32)>,
+}
+
+impl IO for stsc {
+    fn parse(r: &mut BytesMut) -> Self {
+        let mut rst = Self {
+            base: FullBox::parse(r),
+            entries: vec![]
+        };
+
+        let entry_count = r.get_u32();
+        for _ in 0..entry_count {
+            rst.entries.push((r.get_u32(), r.get_u32(), r.get_u32()))
+        }
+
+        rst
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        w.put(self.base.as_bytes());
+
+        w.put_u32(self.entries.len() as u32);
+
+        for (first_chunk, samples_per_chunk, sample_description_index) in &self.entries {
+            w.put_u32(*first_chunk);
+            w.put_u32(*samples_per_chunk);
+            w.put_u32(*sample_description_index);
+        }
+
+        w
+    }
+}
+
+#[allow(non_camel_case_types)]
 pub struct stsz {
     base: FullBox,
 
@@ -725,45 +764,6 @@ impl IO for stsz {
             for entry_size in &self.entries {
                 w.put_u32(*entry_size);
             }
-        }
-
-        w
-    }
-}
-
-#[allow(non_camel_case_types)]
-pub struct stsc {
-    base: FullBox,
-
-    pub entries: Vec<(u32, u32, u32)>,
-}
-
-impl IO for stsc {
-    fn parse(r: &mut BytesMut) -> Self {
-        let mut rst = Self {
-            base: FullBox::parse(r),
-            entries: vec![]
-        };
-
-        let entry_count = r.get_u32();
-        for _ in 0..entry_count {
-            rst.entries.push((r.get_u32(), r.get_u32(), r.get_u32()))
-        }
-
-        rst
-    }
-
-    fn as_bytes(&mut self) -> BytesMut {
-        let mut w = BytesMut::new();
-
-        w.put(self.base.as_bytes());
-
-        w.put_u32(self.entries.len() as u32);
-
-        for (first_chunk, samples_per_chunk, sample_description_index) in &self.entries {
-            w.put_u32(*first_chunk);
-            w.put_u32(*samples_per_chunk);
-            w.put_u32(*sample_description_index);
         }
 
         w
