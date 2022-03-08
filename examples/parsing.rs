@@ -33,7 +33,8 @@ fn parse(mut buf: BytesMut) {
             }
             // moof: Movie Fragment
             0x6d6f6f66 => {
-                parse_moof(b.payload);
+                let moof = fmp4::moof::parse(&mut b.payload);
+                eprintln!("{:?}", moof);
             }
             // mdat: Media Data
             0x6d646174 => {
@@ -156,15 +157,8 @@ fn parse_stbl(mut buf: BytesMut) {
         match b.box_type {
             // stsd: Sample Description
             0x73747364 => {
-                let _ = fmp4::FullBox::parse(&mut b.payload);
-
-                let entry_count = b.payload.get_u32();
-
-                eprintln!("\t\t\t\t\t\tentry_count: {:?}", entry_count);
-                for _ in 0..entry_count {
-                    let len = b.payload.get_u32() - 4;
-                    parse_stsd_entry(b.payload.split_to(len as usize));
-                }
+                let stsd = fmp4::stsd::parse(&mut b.payload);
+                eprintln!("{:?}", stsd);
             }
             // stts: Decoding Time to Sample
             0x73747473 => {
@@ -187,113 +181,6 @@ fn parse_stbl(mut buf: BytesMut) {
                 eprintln!("{:?}", stco);
             }
             _ => {
-            }
-        }
-    }
-}
-
-fn parse_stsd_entry(mut b: BytesMut) {
-    let handler_type = b.get_u32();
-    let _ = b.split_to(6);
-    let data_reference_index = b.get_u16();
-
-    let base = Box::new(fmp4::SampleEntry::Base {
-        handler_type,
-        data_reference_index,
-    });
-
-    match handler_type {
-        // avc1
-        0x61766331 => {
-            let avc1 = {
-                let _ = b.get_u16();
-                let _ = b.get_u16();
-                let _ = b.split_to(12);
-                let width = b.get_u16();
-                let height = b.get_u16();
-                let horiz_resolution = b.get_u32();
-                let vert_resolution = b.get_u32();
-                let _ = b.get_u32();
-                let frame_count = b.get_u16();
-                let compressor_name = std::str::from_utf8(b.split_to(32).chunk()).unwrap_or("").to_owned();
-                let depth = b.get_u16();
-                let _ = b.get_u16();
-
-                fmp4::SampleEntry::Visual {
-                    base: base.clone(),
-                    width,
-                    height,
-                    horiz_resolution,
-                    vert_resolution,
-                    frame_count,
-                    compressor_name,
-                    depth,
-                }
-            };
-
-            eprintln!("{:?}", avc1);
-
-            parse_avc1(b);
-        }
-        // mp4a
-        0x6d703461 => {
-            let mp4a = {
-                let _ = b.get_u64();
-                let channel_count = b.get_u16();
-                let sample_size = b.get_u16();
-                let _ = b.get_u32();
-                let sample_rate = b.get_u32();
-                fmp4::SampleEntry::Audio {
-                    base: base.clone(),
-                    channel_count,
-                    sample_size,
-                    sample_rate,
-                }
-            };
-
-            eprintln!("{:?}", mp4a);
-        }
-        _ => {
-            eprintln!("{:?}", base);
-        }
-    }
-}
-
-fn parse_avc1(mut buf: BytesMut) {
-    while 0 < buf.len() {
-        let mut b = fmp4::Box::parse(&mut buf);
-
-        eprintln!("\t\t\t\t\t\t\t\t\t0x{:08x?}: {:?}", b.box_type, std::str::from_utf8(&b.box_type.to_be_bytes()).unwrap_or(""));
-        match b.box_type {
-            // avcC
-            0x61766343 => {
-                let avc_config = fmp4::avcC::parse(&mut b.payload);
-                eprintln!("{:?}", avc_config);
-            }
-            _ => {
-            }
-        }
-    }
-}
-
-fn parse_moof(mut buf: BytesMut) {
-    while 0 < buf.len() {
-        let mut b = fmp4::Box::parse(&mut buf);
-
-        eprintln!("\t0x{:08x?}: {:?}", b.box_type, std::str::from_utf8(&b.box_type.to_be_bytes()).unwrap_or(""));
-        match b.box_type {
-            // mfhd: Movie Fragment Header
-            0x6d666864 => {
-                let mfhd = fmp4::mfhd::parse(&mut b.payload);
-                eprintln!("{:?}", mfhd);
-            }
-            // traf: Track Fragment
-            0x74726166 => {
-                let traf = fmp4::traf::parse(&mut b.payload);
-                eprintln!("{:?}", traf);
-            }
-            _ => {
-                eprintln!("\t\t{:?}", b.payload);
             }
         }
     }

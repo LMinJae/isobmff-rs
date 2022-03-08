@@ -774,6 +774,57 @@ impl IO for dref {
     }
 }
 
+#[allow(non_camel_case_types)]
+pub struct stsd {
+    base: FullBox,
+
+    entries: Vec<SampleEntry>,
+}
+
+impl Debug for stsd {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\t\t\t\t\tentry_count: {:?}", self.entries.len()))?;
+        for it in &self.entries {
+            f.write_fmt(format_args!("\n{:?}", it))?;
+        }
+
+        Ok(())
+    }
+}
+
+impl IO for stsd {
+    fn parse(r: &mut BytesMut) -> Self {
+        let mut rst = Self {
+            base: FullBox::parse(r),
+            entries: vec![],
+        };
+
+        let entry_count = r.get_u32();
+        for _ in 0..entry_count {
+            rst.entries.push(SampleEntry::parse(r));
+        }
+
+        rst
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        w.put(self.base.as_bytes());
+
+        w.put_u32(self.entries.len() as u32);
+
+        for it in self.entries.iter_mut() {
+            w.put(Box {
+                box_type: it.get_handler_type(),
+                payload: it.as_bytes()
+            }.as_bytes());
+        }
+
+        w
+    }
+}
+
 #[derive(Clone)]
 pub enum SampleEntry {
     Base {
@@ -797,7 +848,14 @@ pub enum SampleEntry {
         channel_count: u16,
         sample_size: u16,
         sample_rate: u32,
-    }
+    },
+    #[allow(non_camel_case_types)]
+    #[allow(non_snake_case)]
+    avc1 {
+        base: std::boxed::Box<SampleEntry>,
+
+        avcC: avcC,
+    },
 }
 
 impl Debug for SampleEntry {
@@ -842,13 +900,184 @@ impl Debug for SampleEntry {
                 f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\tsample_size: {:?}", sample_size))?;
                 f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\tsample_rate: {:?}", sample_rate))?;
             }
+            SampleEntry::avc1 {
+                base,
+                avcC,
+            } => {
+                f.write_fmt(format_args!("{:?}", base))?;
+
+                f.write_fmt(format_args!("\n{:?}", avcC))?;
+
+            }
         }
 
         Ok(())
     }
 }
 
+impl IO for SampleEntry {
+    fn parse(r: &mut BytesMut) -> Self {
+        let mut b = Box::parse(r);
+        let _ = b.payload.split_to(6);
+        let handler_type = b.box_type;
+        let data_reference_index = b.payload.get_u16();
+
+        let base = SampleEntry::Base {
+            handler_type,
+            data_reference_index,
+        };
+
+        match handler_type {
+            // avc1
+            0x61766331 => {
+                let _ = b.payload.get_u16();
+                let _ = b.payload.get_u16();
+                let _ = b.payload.split_to(12);
+                let width = b.payload.get_u16();
+                let height = b.payload.get_u16();
+                let horiz_resolution = b.payload.get_u32();
+                let vert_resolution = b.payload.get_u32();
+                let _ = b.payload.get_u32();
+                let frame_count = b.payload.get_u16();
+                let compressor_name = std::str::from_utf8(b.payload.split_to(32).chunk()).unwrap_or("").to_owned();
+                let depth = b.payload.get_u16();
+                let _ = b.payload.get_u16();
+
+                let vide = SampleEntry::Visual {
+                    base: std::boxed::Box::new(base),
+                    width,
+                    height,
+                    horiz_resolution,
+                    vert_resolution,
+                    frame_count,
+                    compressor_name,
+                    depth,
+                };
+
+                while 0 < b.payload.len() {
+                    let mut b = Box::parse(&mut b.payload);
+
+                    match b.box_type {
+                        // avcC
+                        0x61766343 => {
+                            return SampleEntry::avc1 {
+                                base: std::boxed::Box::new(vide),
+                                avcC: avcC::parse(&mut b.payload),
+                            }
+                        }
+                        _ => {
+                        }
+                    }
+                }
+
+                vide
+            }
+            // mp4a
+            0x6d703461 => {
+                let _ = b.payload.get_u64();
+                let channel_count = b.payload.get_u16();
+                let sample_size = b.payload.get_u16();
+                let _ = b.payload.get_u32();
+                let sample_rate = b.payload.get_u32();
+                SampleEntry::Audio {
+                    base: std::boxed::Box::new(base),
+                    channel_count,
+                    sample_size,
+                    sample_rate,
+                }
+            }
+            _ => {
+                base
+            }
+        }
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        match self {
+            SampleEntry::Base { data_reference_index, .. } => {
+                for _ in 0..5 {
+                    w.put_u8(0);
+                }
+                w.put_u16(*data_reference_index);
+            }
+            SampleEntry::Visual {
+                base,
+                width,
+                height,
+                horiz_resolution,
+                vert_resolution,
+                frame_count,
+                compressor_name,
+                depth,
+            } => {
+                w.put(base.as_bytes());
+
+                w.put_u16(0);
+                w.put_u16(0);
+                for _ in 0..12 {
+                    w.put_u8(0);
+                }
+                w.put_u16(*width);
+                w.put_u16(*height);
+                w.put_u32(*horiz_resolution);
+                w.put_u32(*vert_resolution);
+                w.put_u32(0);
+                w.put_u16(*frame_count);
+                w.put(&compressor_name.as_bytes()[..32]);
+                w.put_u16(*depth);
+                w.put_u16(0);
+            }
+            SampleEntry::Audio {
+                base,
+                channel_count,
+                sample_size,
+                sample_rate,
+            } => {
+                w.put(base.as_bytes());
+
+                w.put_u64(0);
+                w.put_u16(*channel_count);
+                w.put_u16(*sample_size);
+                w.put_u32(0);
+                w.put_u32(*sample_rate);
+            }
+            SampleEntry::avc1 {
+                base,
+                avcC,
+            } => {
+                w.put(base.as_bytes());
+
+                w.put(avcC.as_bytes());
+            }
+        }
+
+        w
+    }
+}
+
+impl SampleEntry {
+    fn get_handler_type(&self) -> u32 {
+        match self {
+            SampleEntry::Base { handler_type, .. } => {
+                *handler_type
+            }
+            SampleEntry::Visual { base, .. } => {
+                base.get_handler_type()
+            }
+            SampleEntry::Audio { base, .. } => {
+                base.get_handler_type()
+            }
+            SampleEntry::avc1 { base, .. } => {
+                base.get_handler_type()
+            }
+        }
+    }
+}
+
 #[allow(non_camel_case_types)]
+#[derive(Clone)]
 pub struct avcC {
     pub configuration_version: u8,
     pub profile_indication: u8,
@@ -1144,6 +1373,73 @@ impl IO for stco {
 }
 
 #[allow(non_camel_case_types)]
+pub struct moof {
+    mfhd: mfhd,
+    trafs: Vec<traf>,
+}
+
+impl Debug for moof {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t0x6d666864: \"mfhd\""))?;
+        f.write_fmt(format_args!("\n{:?}", self.mfhd))?;
+
+        for it in &self.trafs {
+            f.write_fmt(format_args!("\n\t0x74726166: \"traf\""))?;
+            f.write_fmt(format_args!("\n{:?}", it))?;
+        }
+
+        Ok(())
+    }
+}
+
+impl IO for moof {
+    fn parse(r: &mut BytesMut) -> Self {
+        let mut rst = Self {
+            mfhd: mfhd { base: FullBox { version: 0, flags: 0 }, sequence_number: 0 },
+            trafs: vec![]
+        };
+
+        while 0 < r.len() {
+            let mut b = Box::parse(r);
+
+            eprintln!("\t0x{:08x?}: {:?}", b.box_type, std::str::from_utf8(&b.box_type.to_be_bytes()).unwrap_or(""));
+            match b.box_type {
+                // mfhd: Movie Fragment Header
+                0x6d666864 => {
+                    rst.mfhd = mfhd::parse(&mut b.payload);
+                }
+                // traf: Track Fragment
+                0x74726166 => {
+                    rst.trafs.push(traf::parse(&mut b.payload));
+                }
+                _ => {
+                }
+            }
+        }
+
+        rst
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        w.put(Box {
+            box_type: 0x6d666864,
+            payload: self.mfhd.as_bytes(),
+        }.as_bytes());
+
+        for it in self.trafs.iter_mut() {
+            w.put(Box {
+                box_type: 0x74726166,
+                payload: it.as_bytes(),
+            }.as_bytes());
+        }
+
+        w
+    }
+}
+
+#[allow(non_camel_case_types)]
 pub struct mfhd {
     base: FullBox,
 
@@ -1383,27 +1679,29 @@ impl Debug for trun {
             f.write_fmt(format_args!("\n\t\t\tfirst_sample_flags: {:?}", self.first_sample_flags))?;
         }
 
+        f.write_fmt(format_args!("\n\t\t\t["))?;
         for (
             sample_duration,
             sample_size,
             sample_flags,
             sample_composition_time_offset,
         ) in &self.samples {
-            f.write_fmt(format_args!("\n\t\t\t{{"))?;
+            f.write_fmt(format_args!("\n\t\t\t\t{{"))?;
             if let Some(n) = sample_duration {
-                f.write_fmt(format_args!("\n\t\t\t\tsample_duration: {:?}", n))?;
+                f.write_fmt(format_args!("\n\t\t\t\t\tsample_duration: {:?}", n))?;
             }
             if let Some(n) = sample_size {
-                f.write_fmt(format_args!("\n\t\t\t\tsample_size: {:?}", n))?;
+                f.write_fmt(format_args!("\n\t\t\t\t\tsample_size: {:?}", n))?;
             }
             if let Some(n) = sample_flags {
-                f.write_fmt(format_args!("\n\t\t\t\tsample_flags: {:?}", n))?;
+                f.write_fmt(format_args!("\n\t\t\t\t\tsample_flags: {:?}", n))?;
             }
             if let Some(n) = sample_composition_time_offset {
-                f.write_fmt(format_args!("\n\t\t\t\tsample_composition_time_offset: {:?}", n))?;
+                f.write_fmt(format_args!("\n\t\t\t\t\tsample_composition_time_offset: {:?}", n))?;
             }
-            f.write_fmt(format_args!("\n\t\t\t}}"))?;
+            f.write_fmt(format_args!("\n\t\t\t\t}}"))?;
         }
+        f.write_fmt(format_args!("\n\t\t\t]"))?;
 
         Ok(())
     }
