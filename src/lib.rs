@@ -1174,6 +1174,80 @@ impl IO for mfhd {
 }
 
 #[allow(non_camel_case_types)]
+pub struct traf {
+    pub tfhd: tfhd,
+    pub truns: Vec<trun>,
+}
+
+impl Debug for traf {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\t0x74666864: \"tfhd\""))?;
+        f.write_fmt(format_args!("\n{:?}", self.tfhd))?;
+
+        for it in &self.truns {
+            f.write_fmt(format_args!("\n\t\t0x7472756e: \"trun\""))?;
+            f.write_fmt(format_args!("\n{:?}", it))?;
+        }
+
+        Ok(())
+    }
+}
+
+impl IO for traf {
+    fn parse(r: &mut BytesMut) -> Self {
+        let mut rst = Self {
+            tfhd: tfhd {
+                base: FullBox { version: 0, flags: 0 },
+                track_id: 0,
+                base_data_offset: None,
+                sample_description_index: None,
+                default_sample_duration: None,
+                default_sample_size: None,
+                default_sample_flags: None
+            },
+            truns: vec![]
+        };
+
+        while 0 < r.len() {
+            let mut b = Box::parse(r);
+
+            match b.box_type {
+                // tfhd:
+                0x74666864 => {
+                    rst.tfhd = tfhd::parse(&mut b.payload);
+                }
+                // trun: Track Fragment Run
+                0x7472756e => {
+                    rst.truns.push(trun::parse(&mut b.payload));
+                }
+                _ => {
+                }
+            }
+        }
+
+        rst
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        w.put(Box {
+            box_type: 0x74666864,
+            payload: self.tfhd.as_bytes()
+        }.as_bytes());
+
+        for it in self.truns.iter_mut() {
+            w.put(Box {
+                box_type: 0x7472756e,
+                payload: it.as_bytes()
+            }.as_bytes());
+        }
+
+        w
+    }
+}
+
+#[allow(non_camel_case_types)]
 pub struct tfhd {
     pub base: FullBox,
     pub track_id: u32,

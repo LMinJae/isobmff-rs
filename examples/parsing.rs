@@ -289,32 +289,11 @@ fn parse_moof(mut buf: BytesMut) {
             }
             // traf:
             0x74726166 => {
-                parse_traf(b.payload);
+                let traf = fmp4::traf::parse(&mut b.payload);
+                eprintln!("{:?}", traf);
             }
             _ => {
                 eprintln!("\t\t{:?}", b.payload);
-            }
-        }
-    }
-}
-
-fn parse_traf(mut buf: BytesMut) {
-    while 0 < buf.len() {
-        let mut b = fmp4::Box::parse(&mut buf);
-
-        eprintln!("\t\t0x{:08x?}: {:?}", b.box_type, std::str::from_utf8(&b.box_type.to_be_bytes()).unwrap_or(""));
-        match b.box_type {
-            // tfhd:
-            0x74666864 => {
-                let tfhd = fmp4::tfhd::parse(&mut b.payload);
-                eprintln!("{:?}", tfhd);
-            }
-            // trun: Track Fragment Run
-            0x7472756e => {
-                let trun = fmp4::trun::parse(&mut b.payload);
-                eprintln!("{:?}", trun);
-            }
-            _ => {
             }
         }
     }
