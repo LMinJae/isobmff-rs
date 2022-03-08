@@ -445,7 +445,7 @@ impl IO for hdlr {
         let _ = r.get_u32();
         let handler_type = r.get_u32();
         let _ = r.split_to(12);
-        let name = std::str::from_utf8(r.split_to(r.len()).chunk()).unwrap().to_string();
+        let name = std::str::from_utf8(r.split_to(r.len()).chunk()).unwrap().to_owned();
 
         Self {
             base,
