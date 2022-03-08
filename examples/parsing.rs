@@ -151,7 +151,7 @@ fn parse_minf(mut buf: BytesMut) {
 }
 
 fn parse_mdat(mut buf: BytesMut) {
-    eprintln!("AVC");
+    eprintln!("\tAVC");
     parse_avc(buf.split_to(9814));
     parse_avc(buf.split_to(817));
     parse_avc(buf.split_to(598));
@@ -177,7 +177,7 @@ fn parse_mdat(mut buf: BytesMut) {
     parse_avc(buf.split_to(440));
     parse_avc(buf.split_to(562));
 
-    eprintln!("AAC");
+    eprintln!("\tAAC");
     parse_aac(buf.split_to(6));
     parse_aac(buf.split_to(169));
     parse_aac(buf.split_to(145));
@@ -199,9 +199,9 @@ fn parse_mdat(mut buf: BytesMut) {
 }
 
 fn parse_avc(buf: BytesMut) {
-    eprintln!("{:02x?}", buf.chunk());
+    eprintln!("\t\t{:02x?}", buf.chunk());
 }
 
 fn parse_aac(buf: BytesMut) {
-    eprintln!("{:02x?}", buf.chunk());
+    eprintln!("\t\t{:02x?}", buf.chunk());
 }
