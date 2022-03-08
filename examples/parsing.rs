@@ -22,21 +22,21 @@ fn parse(mut buf: BytesMut) {
 
         eprintln!("0x{:08x?}: {:?}", b.box_type, std::str::from_utf8(&b.box_type.to_be_bytes()).unwrap_or(""));
         match b.box_type {
-            // ftyp: FileTypeBox
-            0x66_74_79_70 => {
+            // ftyp: File Type
+            0x66747970 => {
                 let ftyp = fmp4::ftyp::parse(&mut b.payload);
                 eprintln!("{:?}", ftyp);
             }
-            // moov: MovieBox
-            0x6d_6f_6f_76 => {
+            // moov: Movie Box
+            0x6d6f6f76 => {
                 parse_moov(b.payload);
             }
-            // moof
-            0x6d_6f_6f_66 => {
+            // moof: Movie Fragment
+            0x6d6f6f66 => {
                 parse_moof(b.payload);
             }
             // mdat: Media Data
-            0x6d_64_61_74 => {
+            0x6d646174 => {
                 parse_mdat(b.payload);
                 return
             }
@@ -53,12 +53,12 @@ fn parse_moov(mut buf: BytesMut) {
         eprintln!("\t0x{:08x?}: {:?}", b.box_type, std::str::from_utf8(&b.box_type.to_be_bytes()).unwrap_or(""));
         match b.box_type {
             // mvhd: Movie Header
-            0x6d_76_68_64 => {
+            0x6d766864 => {
                 let mvhd = fmp4::mvhd::parse(&mut b.payload);
                 eprintln!("{:?}", mvhd);
             }
             // trak: Track
-            0x74_72_61_6b => {
+            0x7472616b => {
                 parse_trak(b.payload);
             }
             _ => {
@@ -73,13 +73,13 @@ fn parse_trak(mut buf: BytesMut) {
 
         eprintln!("\t\t0x{:08x?}: {:?}", b.box_type, std::str::from_utf8(&b.box_type.to_be_bytes()).unwrap_or(""));
         match b.box_type {
-            // tkhd
-            0x74_6b_68_64 => {
+            // tkhd: Track Header
+            0x746b6864 => {
                 let tkhd = fmp4::tkhd::parse(&mut b.payload);
                 eprintln!("{:?}", tkhd);
             }
             // mdia: Meida
-            0x6d_64_69_61 => {
+            0x6d646961 => {
                 parse_mdia(b.payload);
             }
             _ => {
@@ -95,7 +95,7 @@ fn parse_mdia(mut buf: BytesMut) {
         eprintln!("\t\t\t0x{:08x?}: {:?}", b.box_type, std::str::from_utf8(&b.box_type.to_be_bytes()).unwrap_or(""));
         match b.box_type {
             // mdhd: Media Header
-            0x6d_64_68_64 => {
+            0x6d646864 => {
                 let mdhd = fmp4::mdhd::parse(&mut b.payload);
 
                 eprintln!("{:?}", mdhd);
@@ -106,7 +106,7 @@ fn parse_mdia(mut buf: BytesMut) {
 
                 eprintln!("{:?}", hdlr);
             }
-            // minf: Midia Information
+            // minf: Media Information
             0x6d696e66 => {
                 parse_minf(b.payload);
             }
@@ -282,12 +282,12 @@ fn parse_moof(mut buf: BytesMut) {
 
         eprintln!("\t0x{:08x?}: {:?}", b.box_type, std::str::from_utf8(&b.box_type.to_be_bytes()).unwrap_or(""));
         match b.box_type {
-            // mfhd:
+            // mfhd: Movie Fragment Header
             0x6d666864 => {
                 let mfhd = fmp4::mfhd::parse(&mut b.payload);
                 eprintln!("{:?}", mfhd);
             }
-            // traf:
+            // traf: Track Fragment
             0x74726166 => {
                 let traf = fmp4::traf::parse(&mut b.payload);
                 eprintln!("{:?}", traf);

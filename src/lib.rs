@@ -1212,7 +1212,7 @@ impl IO for traf {
             let mut b = Box::parse(r);
 
             match b.box_type {
-                // tfhd:
+                // tfhd: Track Fragment Header
                 0x74666864 => {
                     rst.tfhd = tfhd::parse(&mut b.payload);
                 }
@@ -1264,7 +1264,6 @@ impl Debug for tfhd {
 
         f.write_fmt(format_args!("\n\t\t\ttrack_id: {:?}", self.track_id))?;
 
-        // optional
         if 0 != (0x000001 & self.base.flags) {
             f.write_fmt(format_args!("\n\t\t\tbase_data_offset: {:?}", self.base_data_offset))?;
         }
@@ -1297,7 +1296,6 @@ impl IO for tfhd {
             default_sample_flags: None
         };
 
-        // optional
         if 0 != (0x000001 & rst.base.flags) {
             rst.base_data_offset = Some(r.get_u64());
         }
@@ -1418,7 +1416,6 @@ impl IO for trun {
 
         let sample_count = r.get_u32();
 
-        // optional
         if 0 != (0x000001 & rst.base.flags) {
             rst.data_offset = Some(r.get_u32());
         }
