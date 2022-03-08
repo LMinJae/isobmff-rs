@@ -50,7 +50,7 @@ impl IO for Box {
 }
 
 pub struct FullBox {
-    version: u8,
+    pub version: u8,
     pub flags: u32,
 }
 
