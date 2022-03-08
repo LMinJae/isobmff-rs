@@ -18,12 +18,12 @@ impl IO for Box {
             size = r.get_u64() - 8;
         }
         if 0 == size {
-            Box {
+            Self {
                 box_type,
                 payload: r.split_to(r.len()),
             }
         } else {
-            Box {
+            Self {
                 box_type,
                 payload: r.split_to((size as usize) - 8),
             }
