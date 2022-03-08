@@ -544,7 +544,7 @@ impl IO for dinf {
     fn parse(r: &mut BytesMut) -> Self {
         let mut b = Box::parse(r);
 
-        let mut rst = Self {
+        let rst = Self {
             dref: dref::parse(&mut b.payload)
         };
 
@@ -569,12 +569,53 @@ impl IO for dinf {
     }
 }
 
+pub enum DataEntry {
+    #[allow(non_camel_case_types)]
+    url_ {
+        base: FullBox,
+        location: String,
+    }
+}
+
+impl IO for DataEntry {
+    fn parse(r: &mut BytesMut) -> Self {
+        let mut b = Box::parse(r);
+        match b.box_type {
+            // url : URL
+            0x75726c20 => {
+                let base = FullBox::parse(&mut b.payload);
+
+                DataEntry::url_ {
+                    base,
+                    location: std::str::from_utf8(b.payload.split_to(b.payload.len()).chunk()).unwrap().to_owned(),
+                }
+            }
+            _ => {
+                unimplemented!()
+            }
+        }
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        match self {
+            DataEntry::url_ { base, location } => {
+                w.put(base.as_bytes());
+
+                w.put(location.as_bytes());
+            }
+        }
+
+        w
+    }
+}
+
 #[allow(non_camel_case_types)]
 pub struct dref {
     pub base: FullBox,
 
-    // XXX
-    pub entries: Vec<url_>,
+    pub entries: Vec<DataEntry>,
 }
 
 impl IO for dref {
@@ -587,15 +628,7 @@ impl IO for dref {
         let entry_count = r.get_u32();
 
         for _ in 0..entry_count {
-            let mut b = Box::parse(r);
-            match b.box_type {
-                // url : URL
-                0x75726c20 => {
-                    rst.entries.push(url_::parse(&mut b.payload));
-                }
-                _ => {
-                }
-            }
+            rst.entries.push(DataEntry::parse(r));
         }
 
         rst
@@ -611,34 +644,6 @@ impl IO for dref {
         for it in self.entries.iter_mut() {
             w.put(it.as_bytes());
         }
-
-        w
-    }
-}
-
-#[allow(non_camel_case_types)]
-pub struct url_ {
-    pub base: FullBox,
-
-    location: String,
-}
-
-impl IO for url_ {
-    fn parse(r: &mut BytesMut) -> Self {
-        let base = FullBox::parse(r);
-
-        Self {
-            base,
-            location: std::str::from_utf8(r.split_to(r.len()).chunk()).unwrap().to_owned(),
-        }
-    }
-
-    fn as_bytes(&mut self) -> BytesMut {
-        let mut w = BytesMut::new();
-
-        w.put(self.base.as_bytes());
-
-        w.put(self.location.as_bytes());
 
         w
     }

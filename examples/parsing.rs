@@ -168,10 +168,8 @@ fn parse_minf(mut buf: BytesMut) {
                 eprintln!("\t\t\t\t\t0x64726566: \"dref\"");
                 for it in dinf.dref.entries {
                     match it {
-                        fmp4::url_ { base, .. } => {
-                            eprintln!("\t\t\t\t\t\t\tflags: {:?}", base.flags);
-                        }
-                        _ => {
+                        fmp4::DataEntry::url_ { base, .. } => {
+                            eprintln!("\t\t\t\t\t\tflags: {:?}", base.flags);
                         }
                     }
                 }
