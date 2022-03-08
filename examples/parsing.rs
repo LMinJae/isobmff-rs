@@ -154,11 +154,6 @@ fn parse_stbl(mut buf: BytesMut) {
 
         eprintln!("\t\t\t\t\t0x{:08x?}: {:?}", b.box_type, std::str::from_utf8(&b.box_type.to_be_bytes()).unwrap_or(""));
         match b.box_type {
-            // stts: Decoding Time to Sample
-            0x73747473 => {
-                let stts = fmp4::stts::parse(&mut b.payload);
-                eprintln!("{:?}", stts);
-            }
             // stsd: Sample Description
             0x73747364 => {
                 let _ = fmp4::FullBox::parse(&mut b.payload);
@@ -171,15 +166,20 @@ fn parse_stbl(mut buf: BytesMut) {
                     parse_stsd_entry(b.payload.split_to(len as usize));
                 }
             }
-            // stsz: Sample Size
-            0x7374737a => {
-                let stsz = fmp4::stsz::parse(&mut b.payload);
-                eprintln!("{:?}", stsz);
+            // stts: Decoding Time to Sample
+            0x73747473 => {
+                let stts = fmp4::stts::parse(&mut b.payload);
+                eprintln!("{:?}", stts);
             }
             // stsc: Sample To Chunk
             0x73747363 => {
                 let stsc = fmp4::stsc::parse(&mut b.payload);
                 eprintln!("{:?}", stsc);
+            }
+            // stsz: Sample Size
+            0x7374737a => {
+                let stsz = fmp4::stsz::parse(&mut b.payload);
+                eprintln!("{:?}", stsz);
             }
             // stco: Chunk Offset
             0x7374636f => {
