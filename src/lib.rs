@@ -51,7 +51,7 @@ impl IO for Box {
 
 pub struct FullBox {
     version: u8,
-    flags: u32,
+    pub flags: u32,
 }
 
 impl IO for FullBox {
@@ -471,8 +471,8 @@ impl IO for hdlr {
 }
 
 #[allow(non_camel_case_types)]
-struct url_ {
-    base: FullBox,
+pub struct url_ {
+    pub base: FullBox,
 
     location: String,
 }

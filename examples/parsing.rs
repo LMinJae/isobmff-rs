@@ -215,9 +215,9 @@ fn parse_dref_entry(mut b: BytesMut) {
     match _type {
         // url : URL
         0x75726c20 => {
-            let flags = b.get_u32();
+            let url_ = fmp4::url_::parse(&mut b);
 
-            eprintln!("\t\t\t\t\t\t\tflags: {:?}", flags);
+            eprintln!("\t\t\t\t\t\t\tflags: {:?}", url_.base.flags);
         }
         _ => {
         }
