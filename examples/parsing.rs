@@ -117,35 +117,14 @@ fn parse_mdia(mut buf: BytesMut) {
         match b.box_type {
             // mdhd: Media Header
             0x6d_64_68_64 => {
-                let version = b.payload.get_u32() >> 24;
-                eprintln!("\t\t\t\tversion: {:?}", version);
+                let mdhd = fmp4::mdhd::parse(&mut b.payload);
 
-                if 1 == version {
-                    let creation_time = b.payload.get_u64();
-                    let modification_time = b.payload.get_u64();
-                    let timescale = b.payload.get_u32();
-                    let duration = b.payload.get_u64();
+                eprintln!("\t\t\t\tcreation_time: {:?}", mdhd.creation_time);
+                eprintln!("\t\t\t\tmodification_time: {:?}", mdhd.modification_time);
+                eprintln!("\t\t\t\ttimescale: {:?}", mdhd.timescale);
+                eprintln!("\t\t\t\tduration: {:?}", mdhd.duration);
 
-                    eprintln!("\t\t\t\tcreation_time: {:?}", creation_time);
-                    eprintln!("\t\t\t\tmodification_time: {:?}", modification_time);
-                    eprintln!("\t\t\t\ttimescale: {:?}", timescale);
-                    eprintln!("\t\t\t\tduration: {:?}", duration);
-                } else {
-                    let creation_time = b.payload.get_u32();
-                    let modification_time = b.payload.get_u32();
-                    let timescale = b.payload.get_u32();
-                    let duration = b.payload.get_u32();
-
-                    eprintln!("\t\t\t\tcreation_time: {:?}", creation_time);
-                    eprintln!("\t\t\t\tmodification_time: {:?}", modification_time);
-                    eprintln!("\t\t\t\ttimescale: {:?}", timescale);
-                    eprintln!("\t\t\t\tduration: {:?}", duration);
-                }
-
-                let language = b.payload.get_u16();
-                let _ = b.payload.get_u16();
-
-                eprintln!("\t\t\t\tlanguage: {:?}", language);
+                eprintln!("\t\t\t\tlanguage: {:?}", mdhd.language);
             }
             // hdlr: Handler Reference
             0x68646c72 => {
