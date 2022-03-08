@@ -601,10 +601,10 @@ fn parse_mdat(mut buf: BytesMut) {
     parse_aac(buf.split_to(6));
 }
 
-fn parse_avc(mut buf: BytesMut) {
+fn parse_avc(buf: BytesMut) {
     eprintln!("{:02x?}", buf.chunk());
 }
 
-fn parse_aac(mut buf: BytesMut) {
+fn parse_aac(buf: BytesMut) {
     eprintln!("{:02x?}", buf.chunk());
 }
