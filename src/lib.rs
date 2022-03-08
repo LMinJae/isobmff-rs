@@ -2,7 +2,7 @@ use bytes::{Buf, BufMut, BytesMut};
 
 pub trait IO {
     fn parse(r: &mut BytesMut) -> Self;
-    fn as_bytes(self) -> BytesMut;
+    fn as_bytes(&self) -> BytesMut;
 }
 
 pub struct Box {
@@ -30,7 +30,7 @@ impl IO for Box {
         }
     }
 
-    fn as_bytes(self) -> BytesMut {
+    fn as_bytes(&self) -> BytesMut {
         let mut w = BytesMut::new();
 
         let size = 4 + self.payload.len();
@@ -43,7 +43,7 @@ impl IO for Box {
         /*  */ if (u32::MAX as usize) < size && size <= (u64::MAX as usize) {
             w.put_u64(size as u64);
         }
-        w.put(self.payload);
+        w.put(self.payload.chunk());
 
         w
     }
@@ -71,7 +71,7 @@ impl IO for ftyp {
         }
     }
 
-    fn as_bytes(self) -> BytesMut {
+    fn as_bytes(&self) -> BytesMut {
         let mut w = BytesMut::new();
 
         w.put_u32(self.major_brand);
@@ -158,7 +158,7 @@ impl IO for mvhd {
         rst
     }
 
-    fn as_bytes(self) -> BytesMut {
+    fn as_bytes(&self) -> BytesMut {
         let mut w = BytesMut::new();
 
         if (u32::MAX as u64) < self.creation_time ||
@@ -277,7 +277,7 @@ impl IO for tkhd {
         rst
     }
 
-    fn as_bytes(self) -> BytesMut {
+    fn as_bytes(&self) -> BytesMut {
         let mut w = BytesMut::new();
 
         if (u32::MAX as u64) < self.creation_time ||
@@ -370,7 +370,7 @@ impl IO for mdhd {
         rst
     }
 
-    fn as_bytes(self) -> BytesMut {
+    fn as_bytes(&self) -> BytesMut {
         let mut w = BytesMut::new();
 
         if (u32::MAX as u64) < self.creation_time ||
@@ -419,7 +419,7 @@ impl IO for hdlr {
         }
     }
 
-    fn as_bytes(self) -> BytesMut {
+    fn as_bytes(&self) -> BytesMut {
         let mut w = BytesMut::new();
 
         w.put_u32(0);
