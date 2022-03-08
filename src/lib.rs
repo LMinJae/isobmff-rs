@@ -520,7 +520,11 @@ pub struct hdlr {
 
 impl Debug for hdlr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("\t\t\t\thandler_type: {:?}", self.handler_type))?;
+        if let Ok(str) = std::str::from_utf8(&self.handler_type.to_be_bytes()) {
+            f.write_fmt(format_args!("\t\t\t\thandler_type: {:?}", str))?;
+        } else {
+            f.write_fmt(format_args!("\t\t\t\thandler_type: 0x{:08x?}", self.handler_type))?;
+        }
         f.write_fmt(format_args!("\n\t\t\t\tname: {:?}", self.name))?;
 
         Ok(())
