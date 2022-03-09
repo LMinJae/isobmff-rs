@@ -550,7 +550,7 @@ mod tests {
         let mut b = moof {
             mfhd: mfhd {
                 base: FullBox::new(0, 0),
-                sequence_number: 1
+                sequence_number: 1,
             },
             trafs: vec![
                 traf {
@@ -561,7 +561,7 @@ mod tests {
                         sample_description_index: None,
                         default_sample_duration: None,
                         default_sample_size: None,
-                        default_sample_flags: None
+                        default_sample_flags: None,
                     },
                     truns: vec![
                         trun {
@@ -605,7 +605,7 @@ mod tests {
                         sample_description_index: None,
                         default_sample_duration: None,
                         default_sample_size: None,
-                        default_sample_flags: Some(33554432)
+                        default_sample_flags: Some(33554432),
                     },
                     truns: vec![
                         trun {

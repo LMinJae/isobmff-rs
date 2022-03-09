@@ -142,8 +142,8 @@ impl Debug for mvhd {
         f.write_fmt(format_args!("\n\t\tmodification_time: {:?}", self.modification_time))?;
         f.write_fmt(format_args!("\n\t\ttimescale: {:?}", self.timescale))?;
         f.write_fmt(format_args!("\n\t\tduration: {:?}", self.duration))?;
-        f.write_fmt(format_args!("\n\t\trate: {:?}", self.rate))?;
-        f.write_fmt(format_args!("\n\t\tvolume: {:?}", self.volume))?;
+        f.write_fmt(format_args!("\n\t\trate: 0x{:08x?}", self.rate))?;
+        f.write_fmt(format_args!("\n\t\tvolume: 0x{:04x?}", self.volume))?;
         f.write_fmt(format_args!("\n\t\tmatrix: ["))?;
         for i in 0..9 {
             if 0 == i % 3 {
@@ -382,7 +382,6 @@ impl Debug for tkhd {
         f.write_fmt(format_args!("\n\t\t\tmodification_time: {:?}", self.modification_time))?;
         f.write_fmt(format_args!("\n\t\t\ttrack_id: {:?}", self.track_id))?;
         f.write_fmt(format_args!("\n\t\t\tduration: {:?}", self.duration))?;
-
         f.write_fmt(format_args!("\n\t\t\tlayer: {:?}", self.layer))?;
         f.write_fmt(format_args!("\n\t\t\talternate_group: {:?}", self.alternate_group))?;
         f.write_fmt(format_args!("\n\t\t\tvolume: {:?}", self.volume))?;
@@ -624,7 +623,6 @@ impl Debug for mdhd {
         f.write_fmt(format_args!("\n\t\t\t\tmodification_time: {:?}", self.modification_time))?;
         f.write_fmt(format_args!("\n\t\t\t\ttimescale: {:?}", self.timescale))?;
         f.write_fmt(format_args!("\n\t\t\t\tduration: {:?}", self.duration))?;
-
         f.write_fmt(format_args!("\n\t\t\t\tlanguage: "))?;
         f.write_fmt(format_args!("{:}", String::from_utf8_lossy(&[
             0x60 + (0b11111 & (self.language >> 10)) as u8,
@@ -1225,7 +1223,8 @@ impl Debug for dinf {
         for it in &self.dref.entries {
             match it {
                 DataEntry::url_ { base, .. } => {
-                    f.write_fmt(format_args!("\n\t\t\t\t\t\tflags: {:?}", base.flags))?;
+                    f.write_fmt(format_args!("\n\t\t\t\t\t\t0x{:08x?}: \"url_\"", 0x75726c20))?;
+                    f.write_fmt(format_args!("\n\t\t\t\t\t\t\tflags: {:?}", base.flags))?;
                 }
             }
         }
@@ -1552,7 +1551,7 @@ impl IO for stsd {
         for it in self.entries.iter_mut() {
             w.put(Object {
                 box_type: it.get_handler_type(),
-                payload: it.as_bytes()
+                payload: it.as_bytes(),
             }.as_bytes());
         }
 
@@ -1617,11 +1616,11 @@ impl Debug for SampleEntry {
 
                 f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\twidth: {:?}", width))?;
                 f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\theight: {:?}", height))?;
-                f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\thoriz_resolution: {:?}", horiz_resolution))?;
-                f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\tvert_resolution: {:?}", vert_resolution))?;
+                f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\thoriz_resolution: 0x{:08x?}", horiz_resolution))?;
+                f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\tvert_resolution: 0x{:08x?}", vert_resolution))?;
                 f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\tframe_count: {:?}", frame_count))?;
                 f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\tcompressor_name: {:?}", compressor_name))?;
-                f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\tdepth: {:?}", depth))?;
+                f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\tdepth: 0x{:04x?}", depth))?;
             }
             SampleEntry::Audio {
                 base,
@@ -1641,7 +1640,7 @@ impl Debug for SampleEntry {
             } => {
                 base.fmt(f)?;
 
-                f.write_fmt(format_args!("\n{:?}", avcC))?;
+                f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\tavcC:\n{:?}", avcC))?;
 
             }
         }
@@ -1653,8 +1652,8 @@ impl Debug for SampleEntry {
 impl IO for SampleEntry {
     fn parse(r: &mut BytesMut) -> Self {
         let mut b = Object::parse(r);
-        let _ = b.payload.split_to(6);
         let handler_type = b.box_type;
+        let _ = b.payload.split_to(6);
         let data_reference_index = b.payload.get_u16();
 
         let base = SampleEntry::Base {
@@ -1761,7 +1760,7 @@ impl IO for SampleEntry {
                 }
                 w.put_slice(&compressor_name.as_bytes()[..32]);
                 w.put_u16(*depth);
-                w.put_u16(0);
+                w.put_u16(0xffff);
             }
             SampleEntry::Audio {
                 base,
