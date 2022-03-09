@@ -3,12 +3,14 @@ mod avc;
 use std::fmt::{Debug, Formatter};
 use bytes::{Buf, BufMut, BytesMut};
 use crate::{FullBox, IO, Object};
+use crate::moov::avc::avcC;
 
 pub fn parse(r: &mut BytesMut) -> moov {
     moov::parse(r)
 }
 
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct moov {
     mvhd: mvhd,
     trak: trak,
@@ -78,6 +80,7 @@ impl IO for moov {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct mvhd {
     creation_time: u64,
     modification_time: u64,
@@ -236,6 +239,7 @@ impl IO for mvhd {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct trak {
     tkhd: tkhd,
     mdia: mdia,
@@ -306,6 +310,7 @@ impl IO for trak {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct tkhd {
     base: FullBox,
 
@@ -474,6 +479,7 @@ impl IO for tkhd {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct mdia {
     mdhd: mdhd,
     hdlr: hdlr,
@@ -556,6 +562,7 @@ impl IO for mdia {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct mdhd {
     base: FullBox,
 
@@ -692,6 +699,7 @@ impl IO for mdhd {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct hdlr {
     base: FullBox,
 
@@ -765,6 +773,7 @@ impl IO for hdlr {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct minf {
     mhd: MediaInformationHeader,
     dinf: dinf,
@@ -899,7 +908,7 @@ impl IO for minf {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 enum MediaInformationHeader {
     Unknown,
 
@@ -934,7 +943,7 @@ impl Debug for MediaInformationHeader {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct vmhd {
     base: FullBox,
 
@@ -999,7 +1008,7 @@ impl IO for vmhd {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct smhd {
     base: FullBox,
 
@@ -1056,7 +1065,7 @@ impl IO for smhd {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct hmhd {
     base: FullBox,
 
@@ -1134,7 +1143,7 @@ impl IO for hmhd {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct nmhd {
     base: FullBox,
 }
@@ -1180,6 +1189,7 @@ impl IO for nmhd {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct dinf {
     dref: dref,
 }
@@ -1238,6 +1248,7 @@ impl IO for dinf {
     }
 }
 
+#[derive(PartialEq)]
 pub enum DataEntry {
     #[allow(non_camel_case_types)]
     url_ {
@@ -1281,6 +1292,7 @@ impl IO for DataEntry {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct dref {
     base: FullBox,
 
@@ -1338,6 +1350,7 @@ impl IO for dref {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct stbl {
     stsd: stsd,
     stts: stts,
@@ -1444,6 +1457,7 @@ impl IO for stbl {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct stsd {
     base: FullBox,
 
@@ -1524,7 +1538,7 @@ impl IO for stsd {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum SampleEntry {
     Base {
         handler_type: u32,
@@ -1553,7 +1567,7 @@ pub enum SampleEntry {
     avc1 {
         base: std::boxed::Box<SampleEntry>,
 
-        avcC: avc::avcC,
+        avcC: avcC,
     },
 }
 
@@ -1661,7 +1675,7 @@ impl IO for SampleEntry {
                         0x61766343 => {
                             return SampleEntry::avc1 {
                                 base: std::boxed::Box::new(vide),
-                                avcC: avc::avcC::parse(&mut b.payload),
+                                avcC: avcC::parse(&mut b.payload),
                             }
                         }
                         _ => {
@@ -1776,6 +1790,7 @@ impl SampleEntry {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct stts {
     base: FullBox,
 
@@ -1847,6 +1862,7 @@ impl IO for stts {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct stsc {
     base: FullBox,
 
@@ -1920,6 +1936,7 @@ impl IO for stsc {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct stsz {
     base: FullBox,
 
@@ -1999,6 +2016,7 @@ impl IO for stsz {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct stco {
     base: FullBox,
 
@@ -2062,5 +2080,26 @@ impl IO for stco {
         }
 
         w
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{IO, Object};
+    use crate::moov::moov;
+
+    #[test]
+    fn chk_moof() {
+        let mut b = moov {
+            mvhd: Default::default(),
+            trak: Default::default()
+        };
+        let mut obj = Object::parse(&mut Object {
+            box_type: moov::BOX_TYPE,
+            payload: b.as_bytes(),
+        }.as_bytes());
+
+        assert_eq!(moov::BOX_TYPE, obj.box_type);
+        assert_eq!(b, moov::parse(&mut obj.payload));
     }
 }

@@ -70,21 +70,26 @@ impl IO for ftyp {
 
 #[cfg(test)]
 mod tests {
-    use crate::{ftyp, IO, Object};
+    use crate::{IO, Object};
+    use crate::ftyp::ftyp;
 
     #[test]
     fn chk_ftyp() {
-        let mut b = crate::ftyp::ftyp {
-            major_brand: 0,
-            minor_version: 0,
-            compatible_brands: vec![]
+        let mut b = ftyp {
+            major_brand: 0x69736f35,
+            minor_version: 1,
+            compatible_brands: vec![
+                0x61766331,
+                0x69736f35,
+                0x64617368,
+            ],
         };
-        let mut obj = Object::parse(&mut crate::Object {
-            box_type: ftyp::ftyp::BOX_TYPE,
+        let mut obj = Object::parse(&mut Object {
+            box_type: ftyp::BOX_TYPE,
             payload: b.as_bytes(),
         }.as_bytes());
 
-        assert_eq!(ftyp::ftyp::BOX_TYPE, obj.box_type);
+        assert_eq!(ftyp::BOX_TYPE, obj.box_type);
         assert_eq!(b, ftyp::parse(&mut obj.payload));
     }
 }

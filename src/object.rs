@@ -49,7 +49,7 @@ impl IO for Object {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct FullBox {
     pub(crate) version: u8,
     pub(crate) flags: u32,

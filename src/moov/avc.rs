@@ -3,7 +3,7 @@ use bytes::{Buf, BufMut, BytesMut};
 use crate::traits::IO;
 
 #[allow(non_camel_case_types)]
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct avcC {
     configuration_version: u8,
     profile_indication: u8,

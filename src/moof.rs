@@ -7,6 +7,7 @@ pub fn parse(r: &mut BytesMut) -> moof {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct moof {
     mfhd: mfhd,
     trafs: Vec<traf>,
@@ -83,6 +84,7 @@ impl IO for moof {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct mfhd {
     base: FullBox,
 
@@ -133,6 +135,7 @@ impl IO for mfhd {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct traf {
     tfhd: tfhd,
     truns: Vec<trun>,
@@ -209,6 +212,7 @@ impl IO for traf {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct tfhd {
     base: FullBox,
     track_id: u32,
@@ -248,7 +252,7 @@ impl Default for tfhd {
 
 impl Debug for tfhd {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("\t\t\tflags: {:?}", self.base.flags))?;
+        f.write_fmt(format_args!("\t\t\tflags: 0x{:08x?}", self.base.flags))?;
 
         f.write_fmt(format_args!("\n\t\t\ttrack_id: {:?}", self.track_id))?;
 
@@ -306,7 +310,7 @@ impl IO for tfhd {
     fn as_bytes(&mut self) -> BytesMut {
         let mut w = BytesMut::new();
 
-        self.base.flags = 0;
+        self.base.flags = 0x020000; // base-is-moof
         if let Some(_) = self.base_data_offset {
             self.base.flags |= 0x000001;
         }
@@ -348,6 +352,7 @@ impl IO for tfhd {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct trun {
     base: FullBox,
     data_offset: Option<u32>,
@@ -387,7 +392,6 @@ impl Debug for trun {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("\t\t\tflags: 0x{:08x?}", self.base.flags))?;
 
-        f.write_fmt(format_args!("\n\t\t\tsample_count: {:?}", self.samples.len()))?;
         if 0 != (0x000001 & self.base.flags) {
             f.write_fmt(format_args!("\n\t\t\tdata_offset: {:?}", self.data_offset))?;
         }
@@ -395,6 +399,7 @@ impl Debug for trun {
             f.write_fmt(format_args!("\n\t\t\tfirst_sample_flags: {:?}", self.first_sample_flags))?;
         }
 
+        f.write_fmt(format_args!("\n\t\t\tsample_count: {:?}", self.samples.len()))?;
         f.write_fmt(format_args!("\n\t\t\t["))?;
         for (
             sample_duration,
@@ -532,5 +537,112 @@ impl IO for trun {
         }
 
         w
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{FullBox, IO, Object};
+    use crate::moof::{mfhd, moof, tfhd, traf, trun};
+
+    #[test]
+    fn chk_moof() {
+        let mut b = moof {
+            mfhd: mfhd {
+                base: FullBox::new(0, 0),
+                sequence_number: 1
+            },
+            trafs: vec![
+                traf {
+                    tfhd: tfhd {
+                        base: FullBox::new(0, 0x020000),
+                        track_id: 1,
+                        base_data_offset: None,
+                        sample_description_index: None,
+                        default_sample_duration: None,
+                        default_sample_size: None,
+                        default_sample_flags: None
+                    },
+                    truns: vec![
+                        trun {
+                            base: FullBox::new(0, 0x000001 | 0x000004 | 0x000100 | 0x000200 | 0x000800),
+                            data_offset: Some(520),
+                            first_sample_flags: Some(0),
+                            samples: vec![
+                                (Some(3000), Some(9814), None, Some(0)),
+                                (Some(1), Some(817), None, Some(3000)),
+                                (Some(5999), Some(598), None, Some(0)),
+                                (Some(1), Some(656), None, Some(3000)),
+                                (Some(5999), Some(506), None, Some(0)),
+                                (Some(1), Some(703), None, Some(3000)),
+                                (Some(5999), Some(437), None, Some(0)),
+                                (Some(1), Some(550), None, Some(3000)),
+                                (Some(5999), Some(459), None, Some(0)),
+                                (Some(1), Some(1008), None, Some(3150)),
+                                (Some(6149), Some(431), None, Some(0)),
+                                (Some(1), Some(723), None, Some(3000)),
+                                (Some(5999), Some(475), None, Some(0)),
+                                (Some(1), Some(607), None, Some(3000)),
+                                (Some(5999), Some(509), None, Some(0)),
+                                (Some(1), Some(680), None, Some(3000)),
+                                (Some(5999), Some(428), None, Some(0)),
+                                (Some(1), Some(584), None, Some(3000)),
+                                (Some(5999), Some(473), None, Some(0)),
+                                (Some(1), Some(891), None, Some(3000)),
+                                (Some(5999), Some(421), None, Some(0)),
+                                (Some(1), Some(636), None, Some(3000)),
+                                (Some(2999), Some(440), None, Some(0)),
+                                (Some(3000), Some(562), None, Some(3000)),
+                            ]
+                        }
+                    ],
+                },
+                traf {
+                    tfhd: tfhd {
+                        base: FullBox { version: 0, flags: 0x000020 | 0x020000},
+                        track_id: 2,
+                        base_data_offset: None,
+                        sample_description_index: None,
+                        default_sample_duration: None,
+                        default_sample_size: None,
+                        default_sample_flags: Some(33554432)
+                    },
+                    truns: vec![
+                        trun {
+                            base: FullBox::new(0, 0x000001 | 0x000200),
+                            data_offset: Some(23928),
+                            first_sample_flags: None,
+                            samples: vec![
+                                (Some(6), None, None, None),
+                                (Some(169), None, None, None),
+                                (Some(145), None, None, None),
+                                (Some(24), None, None, None),
+                                (Some(6), None, None, None),
+                                (Some(6), None, None, None),
+                                (Some(6), None, None, None),
+                                (Some(6), None, None, None),
+                                (Some(6), None, None, None),
+                                (Some(6), None, None, None),
+                                (Some(6), None, None, None),
+                                (Some(6), None, None, None),
+                                (Some(6), None, None, None),
+                                (Some(6), None, None, None),
+                                (Some(6), None, None, None),
+                                (Some(6), None, None, None),
+                                (Some(6), None, None, None),
+                                (Some(6), None, None, None),
+                            ]
+                        }
+                    ],
+                },
+            ],
+        };
+        let mut obj = Object::parse(&mut Object {
+            box_type: moof::BOX_TYPE,
+            payload: b.as_bytes(),
+        }.as_bytes());
+
+        assert_eq!(moof::BOX_TYPE, obj.box_type);
+        assert_eq!(b, moof::parse(&mut obj.payload));
     }
 }
