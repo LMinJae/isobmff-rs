@@ -2240,6 +2240,7 @@ mod tests {
                                                         rst
                                                     }
                                                 ],
+                                                ext_high_profile: None,
                                             },
                                         }
                                     ],
