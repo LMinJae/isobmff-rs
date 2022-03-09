@@ -14,6 +14,10 @@ pub struct moov {
     trak: trak,
 }
 
+impl moov {
+    pub const BOX_TYPE: u32 = 0x6d6f6f76;
+}
+
 impl Default for moov {
     fn default() -> Self {
         Self {
@@ -25,9 +29,9 @@ impl Default for moov {
 
 impl Debug for moov {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("\t0x6d766864: \"mvhd\"\n"))?;
+        f.write_fmt(format_args!("\t0x{:08x?}: \"mvhd\"\n", mvhd::BOX_TYPE))?;
         self.mvhd.fmt(f)?;
-        f.write_fmt(format_args!("\t0x7472616b: \"trak\"\n"))?;
+        f.write_fmt(format_args!("\t0x{:08x?}: \"trak\"\n", trak::BOX_TYPE))?;
         self.trak.fmt(f)?;
 
         Ok(())
@@ -83,6 +87,10 @@ pub struct mvhd {
     volume: u16,
     matrix: [u32; 9],
     next_track_id: u32,
+}
+
+impl mvhd {
+    pub const BOX_TYPE: u32 = 0x6d766864;
 }
 
 impl Default for mvhd {
@@ -233,6 +241,10 @@ pub struct trak {
     mdia: mdia,
 }
 
+impl trak {
+    pub const BOX_TYPE: u32 = 0x7472616b;
+}
+
 impl Default for trak {
     fn default() -> Self {
         Self {
@@ -244,9 +256,9 @@ impl Default for trak {
 
 impl Debug for trak {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("\t\t0x746b6864: \"tkhd\"\n"))?;
+        f.write_fmt(format_args!("\t\t0x{:08x?}: \"tkhd\"\n", tkhd::BOX_TYPE))?;
         self.tkhd.fmt(f)?;
-        f.write_fmt(format_args!("\n\t\t0x6d646961: \"mdia\"\n"))?;
+        f.write_fmt(format_args!("\n\t\t0x{:08x?}: \"mdia\"\n", mdia::BOX_TYPE))?;
         self.mdia.fmt(f)?;
 
         Ok(())
@@ -307,6 +319,10 @@ pub struct tkhd {
     matrix: [u32; 9],
     width: u32,
     height: u32,
+}
+
+impl tkhd {
+    pub const BOX_TYPE: u32 = 0x746b6864;
 }
 
 impl Default for tkhd {
@@ -464,6 +480,10 @@ pub struct mdia {
     minf: minf,
 }
 
+impl mdia {
+    pub const BOX_TYPE: u32 = 0x6d646961;
+}
+
 impl Default for mdia {
     fn default() -> Self {
         Self {
@@ -476,11 +496,11 @@ impl Default for mdia {
 
 impl Debug for mdia {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("\t\t\t0x6d646864: \"mdhd\"\n"))?;
+        f.write_fmt(format_args!("\t\t\t0x{:08x?}: \"mdhd\"\n", mdhd::BOX_TYPE))?;
         self.mdhd.fmt(f)?;
-        f.write_fmt(format_args!("\n\t\t\t0x68646c72: \"hdlr\"\n"))?;
+        f.write_fmt(format_args!("\n\t\t\t0x{:08x?}: \"hdlr\"\n", hdlr::BOX_TYPE))?;
         self.hdlr.fmt(f)?;
-        f.write_fmt(format_args!("\n\t\t\t0x6d696e66: \"minf\"\n"))?;
+        f.write_fmt(format_args!("\n\t\t\t0x{:08x?}: \"minf\"\n", minf::BOX_TYPE))?;
         self.minf.fmt(f)?;
 
         Ok(())
@@ -544,6 +564,10 @@ pub struct mdhd {
     timescale: u32,
     duration: u64,
     language: u16,
+}
+
+impl mdhd {
+    pub const BOX_TYPE: u32 = 0x6d646864;
 }
 
 impl Default for mdhd {
@@ -675,6 +699,10 @@ pub struct hdlr {
     name: String,
 }
 
+impl hdlr {
+    pub const BOX_TYPE: u32 = 0x68646c72;
+}
+
 impl Default for hdlr {
     //! extends FullBox(‘hdlr’, version = 0, 0) {
     //!     unsigned int(32) pre_defined = 0;
@@ -743,6 +771,10 @@ pub struct minf {
     stbl: stbl,
 }
 
+impl minf {
+    pub const BOX_TYPE: u32 = 0x6d696e66;
+}
+
 impl Default for minf {
     fn default() -> Self {
         Self {
@@ -758,25 +790,25 @@ impl Debug for minf {
         match &self.mhd {
             MediaInformationHeader::Unknown => {}
             MediaInformationHeader::vmhd(v) => {
-                f.write_fmt(format_args!("\t\t\t\t0x766d6864: \"vmhd\"\n"))?;
+                f.write_fmt(format_args!("\t\t\t\t0x{:08x?}: \"vmhd\"\n", vmhd::BOX_TYPE))?;
                 v.fmt(f)?;
             }
             MediaInformationHeader::smhd(v) => {
-                f.write_fmt(format_args!("\t\t\t\t0x736d6864: \"smhd\"\n"))?;
+                f.write_fmt(format_args!("\t\t\t\t0x{:08x?}: \"smhd\"\n", smhd::BOX_TYPE))?;
                 v.fmt(f)?;
             }
             MediaInformationHeader::hmhd(v) => {
-                f.write_fmt(format_args!("\t\t\t\t0x686d6864: \"hmhd\"\n"))?;
+                f.write_fmt(format_args!("\t\t\t\t0x{:08x?}: \"hmhd\"\n", hmhd::BOX_TYPE))?;
                 v.fmt(f)?;
             }
             MediaInformationHeader::nmhd(v) => {
-                f.write_fmt(format_args!("\t\t\t\t0x6e6d6864: \"nmhd\"\n"))?;
+                f.write_fmt(format_args!("\t\t\t\t0x{:08x?}: \"nmhd\"\n", nmhd::BOX_TYPE))?;
                 v.fmt(f)?;
             }
         }
-        f.write_fmt(format_args!("\n\t\t\t\t0x64696e66: \"dinf\"\n"))?;
+        f.write_fmt(format_args!("\n\t\t\t\t0x{:08x?}: \"dinf\"\n", dinf::BOX_TYPE))?;
         self.dinf.fmt(f)?;
-        f.write_fmt(format_args!("\n\t\t\t\t0x7374626c: \"stbl\"\n"))?;
+        f.write_fmt(format_args!("\n\t\t\t\t0x{:08x?}: \"stbl\"\n", stbl::BOX_TYPE))?;
         self.stbl.fmt(f)?;
 
         Ok(())
@@ -910,6 +942,10 @@ pub struct vmhd {
     opcolor: [u16; 3],
 }
 
+impl vmhd {
+    pub const BOX_TYPE: u32 = 0x766d6864;
+}
+
 impl Default for vmhd {
     //! extends FullBox(‘vmhd’, version = 0, 1) {
     //!     template unsigned int(16) graphicsmode = 0; // copy, see below
@@ -970,6 +1006,10 @@ pub struct smhd {
     balance: i16,
 }
 
+impl smhd {
+    pub const BOX_TYPE: u32 = 0x736d6864;
+}
+
 impl Default for smhd {
     //! extends FullBox(‘smhd’, version = 0, 0) {
     //!     template int(16) balance = 0;
@@ -1024,6 +1064,10 @@ pub struct hmhd {
     avg_pdu_size: u16,
     max_bitrate: u16,
     avg_bitrate: u16,
+}
+
+impl hmhd {
+    pub const BOX_TYPE: u32 = 0x686d6864;
 }
 
 impl Default for hmhd {
@@ -1095,6 +1139,10 @@ pub struct nmhd {
     base: FullBox,
 }
 
+impl nmhd {
+    pub const BOX_TYPE: u32 = 0x6e6d6864;
+}
+
 impl Default for nmhd {
     //! extends FullBox(’nmhd’, version = 0, flags) {
     //! }
@@ -1136,6 +1184,10 @@ pub struct dinf {
     dref: dref,
 }
 
+impl dinf {
+    pub const BOX_TYPE: u32 = 0x64696e66;
+}
+
 impl Default for dinf {
     fn default() -> Self {
         Self {
@@ -1146,7 +1198,7 @@ impl Default for dinf {
 
 impl Debug for dinf {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("\t\t\t\t\t0x64726566: \"dref\""))?;
+        f.write_fmt(format_args!("\t\t\t\t\t0x{:08x?}: \"dref\"", dref::BOX_TYPE))?;
         for it in &self.dref.entries {
             match it {
                 DataEntry::url_ { base, .. } => {
@@ -1235,6 +1287,10 @@ pub struct dref {
     entries: Vec<DataEntry>,
 }
 
+impl dref {
+    pub const BOX_TYPE: u32 = 0x64726566;
+}
+
 impl Default for dref {
     //! extends FullBox(‘dref’, version = 0, 0) {
     //!     unsigned int(32) entry_count;
@@ -1302,17 +1358,21 @@ impl Default for stbl {
     }
 }
 
+impl stbl {
+    pub const BOX_TYPE: u32 = 0x7374626c;
+}
+
 impl Debug for stbl {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("\t\t\t\t\t0x73747364: \"stsd\""))?;
+        f.write_fmt(format_args!("\t\t\t\t\t0x{:08x?}: \"stsd\"", stsd::BOX_TYPE))?;
         f.write_fmt(format_args!("\n{:?}", self.stsd))?;
-        f.write_fmt(format_args!("\n\t\t\t\t\t0x73747473: \"stts\""))?;
+        f.write_fmt(format_args!("\n\t\t\t\t\t0x{:08x?}: \"stts\"", stts::BOX_TYPE))?;
         f.write_fmt(format_args!("\n{:?}", self.stts))?;
-        f.write_fmt(format_args!("\n\t\t\t\t\t0x7374737a: \"stsz\""))?;
+        f.write_fmt(format_args!("\n\t\t\t\t\t0x{:08x?}: \"stsz\"", stsz::BOX_TYPE))?;
         f.write_fmt(format_args!("\n{:?}", self.stsz))?;
-        f.write_fmt(format_args!("\n\t\t\t\t\t0x73747363: \"stsc\""))?;
+        f.write_fmt(format_args!("\n\t\t\t\t\t0x{:08x?}: \"stsc\"", stsc::BOX_TYPE))?;
         f.write_fmt(format_args!("\n{:?}", self.stsc))?;
-        f.write_fmt(format_args!("\n\t\t\t\t\t0x7374636f: \"stco\""))?;
+        f.write_fmt(format_args!("\n\t\t\t\t\t0x{:08x?}: \"stco\"", stco::BOX_TYPE))?;
         f.write_fmt(format_args!("\n{:?}", self.stco))?;
 
         Ok(())
@@ -1388,6 +1448,10 @@ pub struct stsd {
     base: FullBox,
 
     entries: Vec<SampleEntry>,
+}
+
+impl stsd {
+    pub const BOX_TYPE: u32 = 0x73747364;
 }
 
 impl Default for stsd {
@@ -1718,6 +1782,10 @@ pub struct stts {
     entries: Vec<(u32, u32)>,
 }
 
+impl stts {
+    pub const BOX_TYPE: u32 = 0x73747473;
+}
+
 impl Default for stts {
     //! extends FullBox(’stts’, version = 0, 0) {
     //!     unsigned int(32) entry_count;
@@ -1783,6 +1851,10 @@ pub struct stsc {
     base: FullBox,
 
     entries: Vec<(u32, u32, u32)>,
+}
+
+impl stsc {
+    pub const BOX_TYPE: u32 = 0x73747363;
 }
 
 impl Default for stsc {
@@ -1853,6 +1925,10 @@ pub struct stsz {
 
     sample_size: u32,
     entries: Vec<u32>,
+}
+
+impl stsz {
+    pub const BOX_TYPE: u32 = 0x7374737a;
 }
 
 impl Default for stsz {
@@ -1927,6 +2003,10 @@ pub struct stco {
     base: FullBox,
 
     entries: Vec<u32>,
+}
+
+impl stco {
+    pub const BOX_TYPE: u32 = 0x7374636f;
 }
 
 impl Default for stco {

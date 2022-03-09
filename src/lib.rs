@@ -1,8 +1,8 @@
-pub mod traits;
-pub mod object;
+mod traits;
+mod object;
 pub mod ftyp;
 pub mod moov;
 pub mod moof;
 
-use crate::object::{Object, FullBox};
-use crate::traits::IO;
+pub use crate::object::{Object, FullBox};
+pub use crate::traits::IO;

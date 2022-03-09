@@ -1,7 +1,7 @@
 use std::fs::{self, File};
 use std::io::{Read};
 use bytes::{Buf, BytesMut};
-use fmp4::traits::IO;
+use fmp4::IO;
 
 fn main() {
     let s = BytesMut::from((|filename| {
@@ -18,22 +18,22 @@ fn main() {
 
 fn parse(mut buf: BytesMut) {
     while 0 < buf.len() {
-        let mut b = fmp4::object::Object::parse(&mut buf);
+        let mut b = fmp4::Object::parse(&mut buf);
 
         eprintln!("0x{:08x?}: {:?}", b.box_type, std::str::from_utf8(&b.box_type.to_be_bytes()).unwrap_or(""));
         match b.box_type {
             // ftyp: File Type
-            0x66747970 => {
+            fmp4::ftyp::ftyp::BOX_TYPE => {
                 let ftyp = fmp4::ftyp::parse(&mut b.payload);
                 eprintln!("{:?}", ftyp);
             }
             // moov: Movie Box
-            0x6d6f6f76 => {
+            fmp4::moov::moov::BOX_TYPE => {
                 let moov = fmp4::moov::parse(&mut b.payload);
                 eprintln!("{:?}", moov);
             }
             // moof: Movie Fragment
-            0x6d6f6f66 => {
+            fmp4::moof::moof::BOX_TYPE => {
                 let moof = fmp4::moof::parse(&mut b.payload);
                 eprintln!("{:?}", moof);
             }

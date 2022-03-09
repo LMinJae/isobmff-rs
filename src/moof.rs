@@ -12,6 +12,10 @@ pub struct moof {
     trafs: Vec<traf>,
 }
 
+impl moof {
+    pub const BOX_TYPE: u32 = 0x6d6f6f66;
+}
+
 impl Default for moof {
     fn default() -> Self {
         Self {
@@ -23,11 +27,11 @@ impl Default for moof {
 
 impl Debug for moof {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("\t0x6d666864: \"mfhd\""))?;
+        f.write_fmt(format_args!("\t0x{:08x?}: \"mfhd\"", mfhd::BOX_TYPE))?;
         f.write_fmt(format_args!("\n{:?}", self.mfhd))?;
 
         for it in &self.trafs {
-            f.write_fmt(format_args!("\n\t0x74726166: \"traf\""))?;
+            f.write_fmt(format_args!("\n\t0x{:08x?}: \"traf\"", traf::BOX_TYPE))?;
             f.write_fmt(format_args!("\n{:?}", it))?;
         }
 
@@ -63,13 +67,13 @@ impl IO for moof {
         let mut w = BytesMut::new();
 
         w.put(Object {
-            box_type: 0x6d666864,
+            box_type: mfhd::BOX_TYPE,
             payload: self.mfhd.as_bytes(),
         }.as_bytes());
 
         for it in self.trafs.iter_mut() {
             w.put(Object {
-                box_type: 0x74726166,
+                box_type: traf::BOX_TYPE,
                 payload: it.as_bytes(),
             }.as_bytes());
         }
@@ -83,6 +87,10 @@ pub struct mfhd {
     base: FullBox,
 
     sequence_number: u32,
+}
+
+impl mfhd {
+    pub const BOX_TYPE: u32 = 0x6d666864;
 }
 
 impl Default for mfhd {
@@ -130,6 +138,10 @@ pub struct traf {
     truns: Vec<trun>,
 }
 
+impl traf {
+    pub const BOX_TYPE: u32 = 0x74726166;
+}
+
 impl Default for traf {
     fn default() -> Self {
         Self {
@@ -141,11 +153,11 @@ impl Default for traf {
 
 impl Debug for traf {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("\t\t0x74666864: \"tfhd\""))?;
+        f.write_fmt(format_args!("\t\t0x{:08x?}: \"tfhd\"", tfhd::BOX_TYPE))?;
         f.write_fmt(format_args!("\n{:?}", self.tfhd))?;
 
         for it in &self.truns {
-            f.write_fmt(format_args!("\n\t\t0x7472756e: \"trun\""))?;
+            f.write_fmt(format_args!("\n\t\t0x{:08x?}: \"trun\"", trun::BOX_TYPE))?;
             f.write_fmt(format_args!("\n{:?}", it))?;
         }
 
@@ -162,11 +174,11 @@ impl IO for traf {
 
             match b.box_type {
                 // tfhd: Track Fragment Header
-                0x74666864 => {
+                tfhd::BOX_TYPE => {
                     rst.tfhd = tfhd::parse(&mut b.payload);
                 }
                 // trun: Track Fragment Run
-                0x7472756e => {
+                trun::BOX_TYPE => {
                     rst.truns.push(trun::parse(&mut b.payload));
                 }
                 _ => {
@@ -181,13 +193,13 @@ impl IO for traf {
         let mut w = BytesMut::new();
 
         w.put(Object {
-            box_type: 0x74666864,
+            box_type: tfhd::BOX_TYPE,
             payload: self.tfhd.as_bytes()
         }.as_bytes());
 
         for it in self.truns.iter_mut() {
             w.put(Object {
-                box_type: 0x7472756e,
+                box_type: trun::BOX_TYPE,
                 payload: it.as_bytes()
             }.as_bytes());
         }
@@ -205,6 +217,10 @@ pub struct tfhd {
     default_sample_duration: Option<u32>,
     default_sample_size: Option<u32>,
     default_sample_flags: Option<u32>,
+}
+
+impl tfhd {
+    pub const BOX_TYPE: u32 = 0x74666864;
 }
 
 impl Default for tfhd {
@@ -337,6 +353,10 @@ pub struct trun {
     data_offset: Option<u32>,
     first_sample_flags: Option<u32>,
     samples: Vec<(Option<u32>, Option<u32>, Option<u32>, Option<u32>)>
+}
+
+impl trun {
+    pub const BOX_TYPE: u32 = 0x7472756e;
 }
 
 impl Default for trun {
