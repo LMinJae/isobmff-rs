@@ -29,7 +29,8 @@ fn parse(mut buf: BytesMut) {
             }
             // moov: Movie Box
             0x6d6f6f76 => {
-                parse_moov(b.payload);
+                let moov = fmp4::moov::parse(&mut b.payload);
+                eprintln!("{:?}", moov);
             }
             // moof: Movie Fragment
             0x6d6f6f66 => {
@@ -40,28 +41,6 @@ fn parse(mut buf: BytesMut) {
             0x6d646174 => {
                 parse_mdat(b.payload);
                 return
-            }
-            _ => {
-            }
-        }
-    }
-}
-
-fn parse_moov(mut buf: BytesMut) {
-    while 0 < buf.len() {
-        let mut b = fmp4::Box::parse(&mut buf);
-
-        eprintln!("\t0x{:08x?}: {:?}", b.box_type, std::str::from_utf8(&b.box_type.to_be_bytes()).unwrap_or(""));
-        match b.box_type {
-            // mvhd: Movie Header
-            0x6d766864 => {
-                let mvhd = fmp4::mvhd::parse(&mut b.payload);
-                eprintln!("{:?}", mvhd);
-            }
-            // trak: Track
-            0x7472616b => {
-                let trak = fmp4::trak::parse(&mut b.payload);
-                eprintln!("{:?}", trak);
             }
             _ => {
             }

@@ -133,6 +133,94 @@ impl IO for ftyp {
 }
 
 #[allow(non_camel_case_types)]
+pub struct moov {
+    mvhd: mvhd,
+    trak: trak,
+}
+
+impl Debug for moov {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t0x6d766864: \"mvhd\"\n"))?;
+        self.mvhd.fmt(f)?;
+        f.write_fmt(format_args!("\t0x7472616b: \"trak\"\n"))?;
+        self.trak.fmt(f)?;
+
+        Ok(())
+    }
+}
+
+impl IO for moov {
+    fn parse(r: &mut BytesMut) -> Self {
+        let mut rst = Self {
+            mvhd: Default::default(),
+            trak: trak { tkhd: Default::default(), mdia: mdia {
+                mdhd: mdhd {
+                    base: FullBox { version: 0, flags: 0 },
+                    creation_time: 0,
+                    modification_time: 0,
+                    timescale: 0,
+                    duration: 0,
+                    language: 0
+                },
+                hdlr: hdlr {
+                    base: FullBox { version: 0, flags: 0 },
+                    handler_type: 0,
+                    name: "".to_string()
+                },
+                minf: minf {
+                    mhd: MediaInformationHeader::Unknown,
+                    dinf: dinf { dref: dref { base: FullBox { version: 0, flags: 0 }, entries: vec![] } },
+                    stbl: stbl {
+                        stsd: stsd { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
+                        stts: stts { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
+                        stsc: stsc { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
+                        stsz: stsz {
+                            base: FullBox { version: 0, flags: 0 },
+                            sample_size: 0,
+                            entries: vec![]
+                        },
+                        stco: stco { base: FullBox { version: 0, flags: 0 }, entries: vec![] }
+                    }
+                }
+            } }
+        };
+
+        while 0 < r.len() {
+            let mut b = Box::parse(r);
+            match b.box_type {
+                // mvhd: Movie Header
+                0x6d766864 => {
+                    rst.mvhd = mvhd::parse(&mut b.payload);
+                }
+                // trak: Track
+                0x7472616b => {
+                    rst.trak = trak::parse(&mut b.payload);
+                }
+                _ => {
+                }
+            }
+        }
+
+        rst
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        w.put(Box {
+            box_type: 0x6d766864,
+            payload: self.mvhd.as_bytes(),
+        }.as_bytes());
+        w.put(Box {
+            box_type: 0x7472616b,
+            payload: self.trak.as_bytes(),
+        }.as_bytes());
+
+        w
+    }
+}
+
+#[allow(non_camel_case_types)]
 pub struct mvhd {
     creation_time: u64,
     modification_time: u64,
