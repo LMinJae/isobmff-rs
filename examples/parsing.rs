@@ -1,6 +1,8 @@
 use std::fs::{self, File};
-use std::io::{Read};
+use std::io::Read;
+
 use bytes::{Buf, BytesMut};
+
 use fmp4::IO;
 
 fn main() {
@@ -40,10 +42,9 @@ fn parse(mut buf: BytesMut) {
             // mdat: Media Data
             0x6d646174 => {
                 parse_mdat(b.payload);
-                return
+                return;
             }
-            _ => {
-            }
+            _ => {}
         }
     }
 }

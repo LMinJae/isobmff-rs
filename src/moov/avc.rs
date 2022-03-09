@@ -1,5 +1,7 @@
 use std::fmt::{Debug, Formatter};
+
 use bytes::{Buf, BufMut, BytesMut};
+
 use crate::traits::IO;
 
 #[allow(non_camel_case_types)]
@@ -63,7 +65,7 @@ impl IO for avcC {
             level_indication,
             length_size_minus_one,
             sps,
-            pps
+            pps,
         }
     }
 

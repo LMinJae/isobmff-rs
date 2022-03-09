@@ -1,10 +1,12 @@
-mod avc;
-
 use std::cmp::min;
 use std::fmt::{Debug, Formatter};
+
 use bytes::{Buf, BufMut, BytesMut};
+
 use crate::{FullBox, IO, Object};
 use crate::moov::avc::avcC;
+
+mod avc;
 
 pub fn parse(r: &mut BytesMut) -> moov {
     moov::parse(r)
@@ -25,7 +27,7 @@ impl Default for moov {
     fn default() -> Self {
         Self {
             mvhd: Default::default(),
-            traks: vec![]
+            traks: vec![],
         }
     }
 }
@@ -58,8 +60,7 @@ impl IO for moov {
                 0x7472616b => {
                     rst.traks.push(trak::parse(&mut b.payload));
                 }
-                _ => {
-                }
+                _ => {}
             }
         }
 
@@ -131,7 +132,7 @@ impl Default for mvhd {
             duration: 0,
             rate: 0x00010000,
             volume: 0x0100,
-            matrix: [0x00010000,0,0,0,0x00010000,0,0,0,0x40000000],
+            matrix: [0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000],
             next_track_id: 0,
         }
     }
@@ -150,7 +151,7 @@ impl Debug for mvhd {
             if 0 == i % 3 {
                 f.write_fmt(format_args!("\n\t\t\t"))?;
             }
-            f.write_fmt(format_args!("0x{:08x?}, ",self.matrix[i]))?;
+            f.write_fmt(format_args!("0x{:08x?}, ", self.matrix[i]))?;
         }
         f.write_fmt(format_args!("\n\t\t]"))?;
         f.write_fmt(format_args!("\n\t\tnext_track_ID: {:?}", self.next_track_id))?;
@@ -290,8 +291,7 @@ impl IO for trak {
                 0x6d646961 => {
                     rst.mdia = mdia::parse(&mut b.payload);
                 }
-                _ => {
-                }
+                _ => {}
             }
         }
 
@@ -377,7 +377,7 @@ impl Default for tkhd {
             layer: 0,
             alternate_group: 0,
             volume: 0,
-            matrix: [0x00010000,0,0,0,0x00010000,0,0,0,0x40000000],
+            matrix: [0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000],
             width: 0,
             height: 0,
         }
@@ -398,7 +398,7 @@ impl Debug for tkhd {
             if 0 == i % 3 {
                 f.write_fmt(format_args!("\n\t\t\t"))?;
             }
-            f.write_fmt(format_args!("0x{:08x?}, ",self.matrix[i]))?;
+            f.write_fmt(format_args!("0x{:08x?}, ", self.matrix[i]))?;
         }
         f.write_fmt(format_args!("\n\t\t]"))?;
         f.write_fmt(format_args!("\n\t\t\twidth: {:?}", self.width))?;
@@ -552,8 +552,7 @@ impl IO for mdia {
                 0x6d696e66 => {
                     rst.minf = minf::parse(&mut b.payload);
                 }
-                _ => {
-                }
+                _ => {}
             }
         }
 
@@ -650,7 +649,7 @@ impl IO for mdhd {
             modification_time: 0,
             timescale: 0,
             duration: 0,
-            language: 0
+            language: 0,
         };
 
         {
@@ -874,8 +873,7 @@ impl IO for minf {
                 0x7374626c => {
                     rst.stbl = stbl::parse(&mut b.payload);
                 }
-                _ => {
-                }
+                _ => {}
             }
         }
 
@@ -1017,7 +1015,7 @@ impl IO for vmhd {
                 r.get_u16(),
                 r.get_u16(),
                 r.get_u16(),
-            ]
+            ],
         }
     }
 
@@ -1152,7 +1150,7 @@ impl IO for hmhd {
             max_pdu_size,
             avg_pdu_size,
             max_bitrate,
-            avg_bitrate
+            avg_bitrate,
         }
     }
 
@@ -1321,7 +1319,7 @@ impl IO for DataEntry {
                         w.put(location.as_bytes());
 
                         w
-                    }
+                    },
                 }
             }
         }.as_bytes());
@@ -1361,7 +1359,7 @@ impl IO for dref {
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self {
             base: FullBox::parse(r),
-            entries: vec![]
+            entries: vec![],
         };
 
         let entry_count = r.get_u32();
@@ -1459,8 +1457,7 @@ impl IO for stbl {
                 0x7374636f => {
                     rst.stco = stco::parse(&mut b.payload);
                 }
-                _ => {
-                }
+                _ => {}
             }
         }
 
@@ -1628,7 +1625,7 @@ impl Debug for SampleEntry {
                 vert_resolution,
                 frame_count,
                 compressor_name,
-                depth ,
+                depth,
             } => {
                 base.fmt(f)?;
 
@@ -1659,7 +1656,6 @@ impl Debug for SampleEntry {
                 base.fmt(f)?;
 
                 f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\tavcC:\n{:?}", avcC))?;
-
             }
         }
 
@@ -1725,10 +1721,9 @@ impl IO for SampleEntry {
                             return SampleEntry::avc1 {
                                 base: std::boxed::Box::new(vide),
                                 avcC: avcC::parse(&mut b.payload),
-                            }
+                            };
                         }
-                        _ => {
-                        }
+                        _ => {}
                     }
                 }
 
@@ -1889,7 +1884,7 @@ impl IO for stts {
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self {
             base: FullBox::parse(r),
-            entries: vec![]
+            entries: vec![],
         };
 
         let entry_count = r.get_u32();
@@ -1962,7 +1957,7 @@ impl IO for stsc {
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self {
             base: FullBox::parse(r),
-            entries: vec![]
+            entries: vec![],
         };
 
         let entry_count = r.get_u32();
@@ -2039,7 +2034,7 @@ impl IO for stsz {
         let mut rst = Self {
             base: FullBox::parse(r),
             sample_size: r.get_u32(),
-            entries: vec![]
+            entries: vec![],
         };
 
         if 0 == rst.sample_size {
@@ -2112,7 +2107,7 @@ impl IO for stco {
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self {
             base: FullBox::parse(r),
-            entries: vec![]
+            entries: vec![],
         };
 
         let entry_count = r.get_u32();
@@ -2141,6 +2136,7 @@ impl IO for stco {
 #[cfg(test)]
 mod tests {
     use bytes::{BufMut, BytesMut};
+
     use crate::{FullBox, IO, Object};
     use crate::moov::{DataEntry, dinf, dref, hdlr, mdhd, mdia, MediaInformationHeader, minf, moov, mvhd, SampleEntry, smhd, stbl, stco, stsc, stsd, stsz, stts, tkhd, tkhd_flags, trak, vmhd};
     use crate::moov::avc::avcC;
@@ -2155,7 +2151,7 @@ mod tests {
                 duration: 0,
                 rate: 0x00010000,
                 volume: 0x0100,
-                matrix: [0x00010000,0,0,0,0x00010000,0,0,0,0x40000000],
+                matrix: [0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000],
                 next_track_id: 3,
             },
             traks: vec![
@@ -2169,7 +2165,7 @@ mod tests {
                         layer: 0,
                         alternate_group: 0,
                         volume: 0x0100,
-                        matrix: [0x00010000,0,0,0,0x00010000,0,0,0,0x40000000],
+                        matrix: [0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000],
                         width: 26214400,
                         height: 19660800,
                     },
@@ -2203,7 +2199,7 @@ mod tests {
                                             base: FullBox::new(0, 0x000001),
                                             location: "".to_owned(),
                                         }
-                                    ]
+                                    ],
                                 }
                             },
                             stbl: stbl {
@@ -2279,7 +2275,7 @@ mod tests {
                         layer: 0,
                         alternate_group: 1,
                         volume: 0x0100,
-                        matrix: [0x00010000,0,0,0,0x00010000,0,0,0,0x40000000],
+                        matrix: [0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000],
                         width: 0,
                         height: 0,
                     },
@@ -2316,7 +2312,7 @@ mod tests {
                                             base: FullBox::new(0, 0x000001),
                                             location: "".to_owned(),
                                         }
-                                    ]
+                                    ],
                                 }
                             },
                             stbl: stbl {
@@ -2332,15 +2328,15 @@ mod tests {
                                             sample_size: 16,
                                             sample_rate: 1445068800,
                                         }
-                                    ]
+                                    ],
                                 },
                                 stts: stts {
                                     base: FullBox::new(0, 0),
-                                    entries: vec![]
+                                    entries: vec![],
                                 },
                                 stsc: stsc {
                                     base: FullBox::new(0, 0),
-                                    entries: vec![]
+                                    entries: vec![],
                                 },
                                 stsz: stsz {
                                     base: FullBox::new(0, 0),

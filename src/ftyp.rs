@@ -1,5 +1,7 @@
 use std::fmt::{Debug, Formatter};
+
 use bytes::{Buf, BufMut, BytesMut};
+
 use crate::IO;
 
 pub fn parse(r: &mut BytesMut) -> ftyp {
@@ -51,7 +53,7 @@ impl IO for ftyp {
                     v.push(r.get_u32())
                 }
                 v
-            }
+            },
         }
     }
 

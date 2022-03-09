@@ -1,5 +1,7 @@
 use std::fmt::{Debug, Formatter};
+
 use bytes::{Buf, BufMut, BytesMut};
+
 use crate::{FullBox, IO, Object};
 
 pub fn parse(r: &mut BytesMut) -> moof {
@@ -56,8 +58,7 @@ impl IO for moof {
                 0x74726166 => {
                     rst.trafs.push(traf::parse(&mut b.payload));
                 }
-                _ => {
-                }
+                _ => {}
             }
         }
 
@@ -184,8 +185,7 @@ impl IO for traf {
                 trun::BOX_TYPE => {
                     rst.truns.push(trun::parse(&mut b.payload));
                 }
-                _ => {
-                }
+                _ => {}
             }
         }
 
@@ -197,13 +197,13 @@ impl IO for traf {
 
         w.put(Object {
             box_type: tfhd::BOX_TYPE,
-            payload: self.tfhd.as_bytes()
+            payload: self.tfhd.as_bytes(),
         }.as_bytes());
 
         for it in self.truns.iter_mut() {
             w.put(Object {
                 box_type: trun::BOX_TYPE,
-                payload: it.as_bytes()
+                payload: it.as_bytes(),
             }.as_bytes());
         }
 
@@ -228,13 +228,13 @@ impl tfhd {
 }
 
 mod tfhd_flags {
-    pub const BASE_DATA_OFFSET_PRESENT          : u32 = 0x000001;
-    pub const SAMPLE_DESCRIPTION_INDEX_PRESENT  : u32 = 0x000002;
-    pub const DEFAULT_SAMPLE_DURATION_PRESENT   : u32 = 0x000008;
-    pub const DEFAULT_SAMPLE_SIZE_PRESENT       : u32 = 0x000010;
-    pub const DEFAULT_SAMPLE_FLAG_PRESENT       : u32 = 0x000020;
-    pub const DURATION_IS_EMPTY                 : u32 = 0x010000;
-    pub const DEFAULT_BASE_IS_MOOF              : u32 = 0x020000;
+    pub const BASE_DATA_OFFSET_PRESENT: u32 = 0x000001;
+    pub const SAMPLE_DESCRIPTION_INDEX_PRESENT: u32 = 0x000002;
+    pub const DEFAULT_SAMPLE_DURATION_PRESENT: u32 = 0x000008;
+    pub const DEFAULT_SAMPLE_SIZE_PRESENT: u32 = 0x000010;
+    pub const DEFAULT_SAMPLE_FLAG_PRESENT: u32 = 0x000020;
+    pub const DURATION_IS_EMPTY: u32 = 0x010000;
+    pub const DEFAULT_BASE_IS_MOOF: u32 = 0x020000;
 }
 
 impl Default for tfhd {
@@ -367,7 +367,7 @@ pub struct trun {
     base: FullBox,
     data_offset: Option<u32>,
     first_sample_flags: Option<u32>,
-    samples: Vec<(Option<u32>, Option<u32>, Option<u32>, Option<u32>)>
+    samples: Vec<(Option<u32>, Option<u32>, Option<u32>, Option<u32>)>,
 }
 
 impl trun {
@@ -375,12 +375,12 @@ impl trun {
 }
 
 mod trun_flags {
-    pub const DATA_OFFSET_PRESENT                       : u32 = 0x000001;
-    pub const FIRST_SAMPLE_FLAGS_PRESENT                : u32 =0x000004;
-    pub const SAMPLE_DURATION_PRESENT                   : u32 =0x000100;
-    pub const SAMPLE_SIZE_PRESENT                       : u32 =0x000200;
-    pub const SAMPLE_FLAGS_PRESENT                      : u32 =0x000400;
-    pub const SAMPLE_COMPOSITION_TIME_OFFSETS_PRESENT   : u32 =0x000800;
+    pub const DATA_OFFSET_PRESENT: u32 = 0x000001;
+    pub const FIRST_SAMPLE_FLAGS_PRESENT: u32 = 0x000004;
+    pub const SAMPLE_DURATION_PRESENT: u32 = 0x000100;
+    pub const SAMPLE_SIZE_PRESENT: u32 = 0x000200;
+    pub const SAMPLE_FLAGS_PRESENT: u32 = 0x000400;
+    pub const SAMPLE_COMPOSITION_TIME_OFFSETS_PRESENT: u32 = 0x000800;
 }
 
 impl Default for trun {
@@ -451,7 +451,7 @@ impl IO for trun {
             base: FullBox::parse(r),
             data_offset: None,
             first_sample_flags: None,
-            samples: vec![]
+            samples: vec![],
         };
 
         let sample_count = r.get_u32();
@@ -610,13 +610,13 @@ mod tests {
                                 (Some(1), Some(636), None, Some(3000)),
                                 (Some(2999), Some(440), None, Some(0)),
                                 (Some(3000), Some(562), None, Some(3000)),
-                            ]
+                            ],
                         }
                     ],
                 },
                 traf {
                     tfhd: tfhd {
-                        base: FullBox { version: 0, flags: 0x000020 | 0x020000},
+                        base: FullBox { version: 0, flags: 0x000020 | 0x020000 },
                         track_id: 2,
                         base_data_offset: None,
                         sample_description_index: None,
@@ -648,7 +648,7 @@ mod tests {
                                 (Some(6), None, None, None),
                                 (Some(6), None, None, None),
                                 (Some(6), None, None, None),
-                            ]
+                            ],
                         }
                     ],
                 },
