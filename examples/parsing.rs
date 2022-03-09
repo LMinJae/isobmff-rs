@@ -1,7 +1,7 @@
 use std::fs::{self, File};
 use std::io::{Read};
 use bytes::{Buf, BytesMut};
-use fmp4::IO;
+use fmp4::traits::IO;
 
 fn main() {
     let s = BytesMut::from((|filename| {
@@ -18,7 +18,7 @@ fn main() {
 
 fn parse(mut buf: BytesMut) {
     while 0 < buf.len() {
-        let mut b = fmp4::Box::parse(&mut buf);
+        let mut b = fmp4::object::Object::parse(&mut buf);
 
         eprintln!("0x{:08x?}: {:?}", b.box_type, std::str::from_utf8(&b.box_type.to_be_bytes()).unwrap_or(""));
         match b.box_type {

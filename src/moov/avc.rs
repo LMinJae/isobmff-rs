@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Formatter};
 use bytes::{Buf, BufMut, BytesMut};
-use crate::IO;
+use crate::traits::IO;
 
 #[allow(non_camel_case_types)]
 #[derive(Clone)]
