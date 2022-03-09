@@ -60,29 +60,8 @@ fn parse_moov(mut buf: BytesMut) {
             }
             // trak: Track
             0x7472616b => {
-                parse_trak(b.payload);
-            }
-            _ => {
-            }
-        }
-    }
-}
-
-fn parse_trak(mut buf: BytesMut) {
-    while 0 < buf.len() {
-        let mut b = fmp4::Box::parse(&mut buf);
-
-        eprintln!("\t\t0x{:08x?}: {:?}", b.box_type, std::str::from_utf8(&b.box_type.to_be_bytes()).unwrap_or(""));
-        match b.box_type {
-            // tkhd: Track Header
-            0x746b6864 => {
-                let tkhd = fmp4::tkhd::parse(&mut b.payload);
-                eprintln!("{:?}", tkhd);
-            }
-            // mdia: Meida
-            0x6d646961 => {
-                let mdia = fmp4::mdia::parse(&mut b.payload);
-                eprintln!("{:?}", mdia);
+                let trak = fmp4::trak::parse(&mut b.payload);
+                eprintln!("{:?}", trak);
             }
             _ => {
             }

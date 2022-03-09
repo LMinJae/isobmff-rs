@@ -266,6 +266,95 @@ impl IO for mvhd {
 }
 
 #[allow(non_camel_case_types)]
+pub struct trak {
+    tkhd: tkhd,
+    mdia: mdia,
+}
+
+impl Debug for trak {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\t0x746b6864: \"tkhd\"\n"))?;
+        self.tkhd.fmt(f)?;
+        f.write_fmt(format_args!("\n\t\t0x6d646961: \"mdia\"\n"))?;
+        self.mdia.fmt(f)?;
+
+        Ok(())
+    }
+}
+
+impl IO for trak {
+    fn parse(r: &mut BytesMut) -> Self {
+        let mut rst = Self {
+            tkhd: Default::default(),
+            mdia: mdia {
+                mdhd: mdhd {
+                    base: FullBox { version: 0, flags: 0 },
+                    creation_time: 0,
+                    modification_time: 0,
+                    timescale: 0,
+                    duration: 0,
+                    language: 0
+                },
+                hdlr: hdlr {
+                    base: FullBox { version: 0, flags: 0 },
+                    handler_type: 0,
+                    name: "".to_string()
+                },
+                minf: minf {
+                    mhd: MediaInformationHeader::Unknown,
+                    dinf: dinf { dref: dref { base: FullBox { version: 0, flags: 0 }, entries: vec![] } },
+                    stbl: stbl {
+                        stsd: stsd { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
+                        stts: stts { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
+                        stsc: stsc { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
+                        stsz: stsz {
+                            base: FullBox { version: 0, flags: 0 },
+                            sample_size: 0,
+                            entries: vec![]
+                        },
+                        stco: stco { base: FullBox { version: 0, flags: 0 }, entries: vec![] }
+                    }
+                }
+            }
+        };
+
+        while 0 < r.len() {
+            let mut b = Box::parse(r);
+
+            match b.box_type {
+                // tkhd: Track Header
+                0x746b6864 => {
+                    rst.tkhd = tkhd::parse(&mut b.payload);
+                }
+                // mdia: Meida
+                0x6d646961 => {
+                    rst.mdia = mdia::parse(&mut b.payload);
+                }
+                _ => {
+                }
+            }
+        }
+
+        rst
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        w.put(Box {
+            box_type: 0x746b6864,
+            payload: self.tkhd.as_bytes(),
+        }.as_bytes());
+        w.put(Box {
+            box_type: 0x6d646961,
+            payload: self.mdia.as_bytes(),
+        }.as_bytes());
+
+        w
+    }
+}
+
+#[allow(non_camel_case_types)]
 pub struct tkhd {
     base: FullBox,
 
