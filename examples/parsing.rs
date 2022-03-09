@@ -109,40 +109,9 @@ fn parse_mdia(mut buf: BytesMut) {
             }
             // minf: Media Information
             0x6d696e66 => {
-                parse_minf(b.payload);
-            }
-            _ => {
-            }
-        }
-    }
-}
+                let minf = fmp4::minf::parse(&mut b.payload);
 
-fn parse_minf(mut buf: BytesMut) {
-    while 0 < buf.len() {
-        let mut b = fmp4::Box::parse(&mut buf);
-
-        eprintln!("\t\t\t\t0x{:08x?}: {:?}", b.box_type, std::str::from_utf8(&b.box_type.to_be_bytes()).unwrap_or(""));
-        match b.box_type {
-            // vmhd: Video Media Header
-            0x766d6864 => {
-                let vmhd = fmp4::vmhd::parse(&mut b.payload);
-
-                eprintln!("{:?}", vmhd);
-            }
-            // smhd: Sound Media Header
-            0x736d6864 => {
-                let smhd = fmp4::smhd::parse(&mut b.payload);
-                eprintln!("{:?}", smhd);
-            }
-            // dinf: Data Information
-            0x64696e66 => {
-                let dinf = fmp4::dinf::parse(&mut b.payload);
-                eprintln!("{:?}", dinf);
-            }
-            // stbl: Sample Table
-            0x7374626c => {
-                let stbl = fmp4::stbl::parse(&mut b.payload);
-                eprintln!("{:?}", stbl);
+                eprintln!("{:?}", minf);
             }
             _ => {
             }

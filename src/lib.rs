@@ -50,6 +50,7 @@ impl IO for Box {
     }
 }
 
+#[derive(Clone)]
 pub struct FullBox {
     version: u8,
     flags: u32,
@@ -564,6 +565,176 @@ impl IO for hdlr {
 }
 
 #[allow(non_camel_case_types)]
+pub struct minf {
+    mhd: MediaInformationHeader,
+    dinf: dinf,
+    stbl: stbl,
+}
+
+impl Debug for minf {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match &self.mhd {
+            MediaInformationHeader::Unknown => {}
+            MediaInformationHeader::vmhd(v) => {
+                f.write_fmt(format_args!("\t\t\t\t0x766d6864: \"vmhd\"\n"))?;
+                v.fmt(f)?;
+            }
+            MediaInformationHeader::smhd(v) => {
+                f.write_fmt(format_args!("\t\t\t\t0x736d6864: \"smhd\"\n"))?;
+                v.fmt(f)?;
+            }
+            MediaInformationHeader::hmhd(v) => {
+                f.write_fmt(format_args!("\t\t\t\t0x686d6864: \"hmhd\"\n"))?;
+                v.fmt(f)?;
+            }
+            MediaInformationHeader::nmhd(v) => {
+                f.write_fmt(format_args!("\t\t\t\t0x6e6d6864: \"nmhd\"\n"))?;
+                v.fmt(f)?;
+            }
+        }
+        f.write_fmt(format_args!("\n\t\t\t\t0x64696e66: \"dinf\"\n"))?;
+        self.dinf.fmt(f)?;
+        f.write_fmt(format_args!("\n\t\t\t\t0x7374626c: \"stbl\"\n"))?;
+        self.stbl.fmt(f)?;
+
+        Ok(())
+    }
+}
+
+impl IO for minf {
+    fn parse(r: &mut BytesMut) -> Self {
+        let mut rst = Self {
+            mhd: MediaInformationHeader::Unknown,
+            dinf: dinf { dref: dref { base: FullBox { version: 0, flags: 0 }, entries: vec![] } },
+            stbl: stbl {
+                stsd: stsd { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
+                stts: stts { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
+                stsc: stsc { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
+                stsz: stsz {
+                    base: FullBox { version: 0, flags: 0 },
+                    sample_size: 0,
+                    entries: vec![]
+                },
+                stco: stco { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
+            },
+        };
+        
+        while 0 < r.len() {
+            let mut b = Box::parse(r);
+
+            match b.box_type {
+                // vmhd: Video Media Header
+                0x766d6864 => {
+                    rst.mhd = MediaInformationHeader::vmhd(vmhd::parse(&mut b.payload));
+                }
+                // smhd: Sound Media Header
+                0x736d6864 => {
+                    rst.mhd = MediaInformationHeader::smhd(smhd::parse(&mut b.payload));
+                }
+                // hmhd: Hint Media Header
+                0x686d6864 => {
+                    rst.mhd = MediaInformationHeader::hmhd(hmhd::parse(&mut b.payload));
+                }
+                // nmhd: Null Media Header
+                0x6e6d6864 => {
+                    rst.mhd = MediaInformationHeader::nmhd(nmhd::parse(&mut b.payload));
+                }
+                // dinf: Data Information
+                0x64696e66 => {
+                    rst.dinf = dinf::parse(&mut b.payload);
+                }
+                // stbl: Sample Table
+                0x7374626c => {
+                    rst.stbl = stbl::parse(&mut b.payload);
+                }
+                _ => {
+                }
+            }
+        }
+
+        rst
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        match self.mhd.clone() {
+            MediaInformationHeader::Unknown => {}
+            MediaInformationHeader::vmhd(mut v) => {
+                w.put(Box {
+                    box_type: 0x766d6864,
+                    payload: v.as_bytes(),
+                }.as_bytes());
+            }
+            MediaInformationHeader::smhd(mut v) => {
+                w.put(Box {
+                    box_type: 0x736d6864,
+                    payload: v.as_bytes(),
+                }.as_bytes());
+            }
+            MediaInformationHeader::hmhd(mut v) => {
+                w.put(Box {
+                    box_type: 0x686d6864,
+                    payload: v.as_bytes(),
+                }.as_bytes());
+            }
+            MediaInformationHeader::nmhd(mut v) => {
+                w.put(Box {
+                    box_type: 0x6e6d6864,
+                    payload: v.as_bytes(),
+                }.as_bytes());
+            }
+        }
+
+        w.put(Box {
+            box_type: 0x64696e66,
+            payload: self.dinf.as_bytes(),
+        }.as_bytes());
+        w.put(Box {
+            box_type: 0x7374626c,
+            payload: self.stbl.as_bytes(),
+        }.as_bytes());
+
+        w
+    }
+}
+
+#[derive(Clone)]
+enum MediaInformationHeader {
+    Unknown,
+
+    #[allow(non_camel_case_types)]
+    vmhd(vmhd),
+    #[allow(non_camel_case_types)]
+    smhd(smhd),
+    #[allow(non_camel_case_types)]
+    hmhd(hmhd),
+    #[allow(non_camel_case_types)]
+    nmhd(nmhd),
+}
+
+impl Debug for MediaInformationHeader {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MediaInformationHeader::Unknown => { Ok(()) }
+            MediaInformationHeader::vmhd(v) => {
+                v.fmt(f)
+            }
+            MediaInformationHeader::smhd(v) => {
+                v.fmt(f)
+            }
+            MediaInformationHeader::hmhd(v) => {
+                v.fmt(f)
+            }
+            MediaInformationHeader::nmhd(v) => {
+                v.fmt(f)
+            }
+        }
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Clone)]
 pub struct vmhd {
     base: FullBox,
 
@@ -610,10 +781,11 @@ impl IO for vmhd {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(Clone)]
 pub struct smhd {
     base: FullBox,
 
-    balance: u16,
+    balance: i16,
 }
 
 impl Debug for smhd {
@@ -628,9 +800,12 @@ impl IO for smhd {
     fn parse(r: &mut BytesMut) -> Self {
         let base = FullBox::parse(r);
 
+        let balance = r.get_i16();
+        let _ = r.get_u16();
+
         Self {
             base,
-            balance: r.get_u16(),
+            balance,
         }
     }
 
@@ -639,7 +814,95 @@ impl IO for smhd {
 
         w.put(self.base.as_bytes());
 
-        w.put_u16(self.balance);
+        w.put_i16(self.balance);
+
+        w
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Clone)]
+pub struct hmhd {
+    base: FullBox,
+
+    max_pdu_size: u16,
+    avg_pdu_size: u16,
+    max_bitrate: u16,
+    avg_bitrate: u16,
+}
+
+impl Debug for hmhd {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\t\t\t\tmax_pdu_size: {:?}", self.max_pdu_size))?;
+        f.write_fmt(format_args!("\t\t\t\t\tavg_pdu_size: {:?}", self.avg_pdu_size))?;
+        f.write_fmt(format_args!("\t\t\t\t\tmax_bitrate: {:?}", self.max_bitrate))?;
+        f.write_fmt(format_args!("\t\t\t\t\tavg_bitrate: {:?}", self.avg_bitrate))?;
+
+        Ok(())
+    }
+}
+
+impl IO for hmhd {
+    fn parse(r: &mut BytesMut) -> Self {
+        let base = FullBox::parse(r);
+
+        let max_pdu_size = r.get_u16();
+        let avg_pdu_size = r.get_u16();
+        let max_bitrate = r.get_u16();
+        let avg_bitrate = r.get_u16();
+        let _ = r.get_u32();
+
+        Self {
+            base,
+            max_pdu_size,
+            avg_pdu_size,
+            max_bitrate,
+            avg_bitrate
+        }
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        w.put(self.base.as_bytes());
+
+        w.put_u16(self.max_pdu_size);
+        w.put_u16(self.avg_pdu_size);
+        w.put_u16(self.max_bitrate);
+        w.put_u16(self.avg_bitrate);
+        w.put_u32(0);
+
+        w
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Clone)]
+pub struct nmhd {
+    base: FullBox,
+}
+
+impl Debug for nmhd {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\t\t\t\tflags: {:?}", self.base.flags))?;
+
+        Ok(())
+    }
+}
+
+impl IO for nmhd {
+    fn parse(r: &mut BytesMut) -> Self {
+        let base = FullBox::parse(r);
+
+        Self {
+            base,
+        }
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        w.put(self.base.as_bytes());
 
         w
     }
