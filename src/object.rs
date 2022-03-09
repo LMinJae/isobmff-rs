@@ -31,15 +31,17 @@ impl IO for Object {
     fn as_bytes(&mut self) -> BytesMut {
         let mut w = BytesMut::new();
 
-        let size = 4 + self.payload.len();
+        let size = 8 + self.payload.len();
         /*  */ if (u32::MAX as usize) < size {
             w.put_u32(1);
         } else if (u64::MAX as usize) < size {
             w.put_u32(0);
+        } else {
+            w.put_u32(size as u32);
         }
         w.put_u32(self.box_type);
         /*  */ if (u32::MAX as usize) < size && size <= (u64::MAX as usize) {
-            w.put_u64(size as u64);
+            w.put_u64(4 + size as u64);
         }
         w.put(self.payload.chunk());
 
