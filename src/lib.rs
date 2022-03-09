@@ -1237,7 +1237,7 @@ impl Debug for SampleEntry {
                 compressor_name,
                 depth ,
             } => {
-                f.write_fmt(format_args!("{:?}", base))?;
+                base.fmt(f)?;
 
                 f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\twidth: {:?}", width))?;
                 f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\theight: {:?}", height))?;
@@ -1253,7 +1253,7 @@ impl Debug for SampleEntry {
                 sample_size,
                 sample_rate,
             } => {
-                f.write_fmt(format_args!("{:?}", base))?;
+                base.fmt(f)?;
 
                 f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\tchannel_count: {:?}", channel_count))?;
                 f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\tsample_size: {:?}", sample_size))?;
@@ -1263,7 +1263,7 @@ impl Debug for SampleEntry {
                 base,
                 avcC,
             } => {
-                f.write_fmt(format_args!("{:?}", base))?;
+                base.fmt(f)?;
 
                 f.write_fmt(format_args!("\n{:?}", avcC))?;
 
