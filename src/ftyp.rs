@@ -7,6 +7,7 @@ pub fn parse(r: &mut BytesMut) -> ftyp {
 }
 
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct ftyp {
     major_brand: u32,
     minor_version: u32,
@@ -64,5 +65,26 @@ impl IO for ftyp {
         }
 
         w
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{ftyp, IO, Object};
+
+    #[test]
+    fn chk_ftyp() {
+        let mut b = crate::ftyp::ftyp {
+            major_brand: 0,
+            minor_version: 0,
+            compatible_brands: vec![]
+        };
+        let mut obj = Object::parse(&mut crate::Object {
+            box_type: ftyp::ftyp::BOX_TYPE,
+            payload: b.as_bytes(),
+        }.as_bytes());
+
+        assert_eq!(ftyp::ftyp::BOX_TYPE, obj.box_type);
+        assert_eq!(b, ftyp::parse(&mut obj.payload));
     }
 }
