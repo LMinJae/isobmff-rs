@@ -1761,7 +1761,6 @@ impl IO for moof {
         while 0 < r.len() {
             let mut b = Box::parse(r);
 
-            eprintln!("\t0x{:08x?}: {:?}", b.box_type, std::str::from_utf8(&b.box_type.to_be_bytes()).unwrap_or(""));
             match b.box_type {
                 // mfhd: Movie Fragment Header
                 0x6d666864 => {
