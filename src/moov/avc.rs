@@ -5,13 +5,13 @@ use crate::traits::IO;
 #[allow(non_camel_case_types)]
 #[derive(Clone, PartialEq)]
 pub struct avcC {
-    configuration_version: u8,
-    profile_indication: u8,
-    profile_compatibility: u8,
-    level_indication: u8,
-    length_size_minus_one: u8,
-    sps: Vec<BytesMut>,
-    pps: Vec<BytesMut>,
+    pub(crate) configuration_version: u8,
+    pub(crate) profile_indication: u8,
+    pub(crate) profile_compatibility: u8,
+    pub(crate) level_indication: u8,
+    pub(crate) length_size_minus_one: u8,
+    pub(crate) sps: Vec<BytesMut>,
+    pub(crate) pps: Vec<BytesMut>,
 }
 
 impl Debug for avcC {
