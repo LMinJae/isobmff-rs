@@ -3,7 +3,7 @@ use std::io::Read;
 
 use bytes::{Buf, BytesMut};
 
-use fmp4::IO;
+use isobmff::IO;
 
 fn main() {
     let s = BytesMut::from((|filename| {
@@ -20,23 +20,23 @@ fn main() {
 
 fn parse(mut buf: BytesMut) {
     while 0 < buf.len() {
-        let mut b = fmp4::Object::parse(&mut buf);
+        let mut b = isobmff::Object::parse(&mut buf);
 
         eprintln!("0x{:08x?}: {:?}", b.box_type, std::str::from_utf8(&b.box_type.to_be_bytes()).unwrap_or(""));
         match b.box_type {
             // ftyp: File Type
-            fmp4::ftyp::ftyp::BOX_TYPE => {
-                let ftyp = fmp4::ftyp::parse(&mut b.payload);
+            isobmff::ftyp::ftyp::BOX_TYPE => {
+                let ftyp = isobmff::ftyp::parse(&mut b.payload);
                 eprintln!("{:?}", ftyp);
             }
             // moov: Movie Box
-            fmp4::moov::moov::BOX_TYPE => {
-                let moov = fmp4::moov::parse(&mut b.payload);
+            isobmff::moov::moov::BOX_TYPE => {
+                let moov = isobmff::moov::parse(&mut b.payload);
                 eprintln!("{:?}", moov);
             }
             // moof: Movie Fragment
-            fmp4::moof::moof::BOX_TYPE => {
-                let moof = fmp4::moof::parse(&mut b.payload);
+            isobmff::moof::moof::BOX_TYPE => {
+                let moof = isobmff::moof::parse(&mut b.payload);
                 eprintln!("{:?}", moof);
             }
             // mdat: Media Data
