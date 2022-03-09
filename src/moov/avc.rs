@@ -74,15 +74,15 @@ impl IO for avcC {
         w.put_u8(self.profile_indication);
         w.put_u8(self.profile_compatibility);
         w.put_u8(self.level_indication);
-        w.put_u8(self.length_size_minus_one & 0b11);
+        w.put_u8((self.length_size_minus_one & 0b11) | 0b11111100);
 
-        w.put_u8((self.sps.len() & 0b11111) as u8);
+        w.put_u8((self.sps.len() & 0b11111) as u8 | 0b11100000);
         for it in &self.sps {
             w.put_u16(it.len() as u16);
             w.put(it.chunk());
         }
 
-        w.put_u8((self.pps.len() & 0b11111) as u8);
+        w.put_u8((self.pps.len() & 0b11111) as u8 | 0b11100000);
         for it in &self.pps {
             w.put_u16(it.len() as u16);
             w.put(it.chunk());

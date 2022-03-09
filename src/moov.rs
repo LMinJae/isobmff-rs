@@ -13,7 +13,7 @@ pub fn parse(r: &mut BytesMut) -> moov {
 #[derive(PartialEq)]
 pub struct moov {
     mvhd: mvhd,
-    trak: trak,
+    traks: Vec<trak>,
 }
 
 impl moov {
@@ -24,7 +24,7 @@ impl Default for moov {
     fn default() -> Self {
         Self {
             mvhd: Default::default(),
-            trak: Default::default(),
+            traks: vec![]
         }
     }
 }
@@ -33,8 +33,10 @@ impl Debug for moov {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("\t0x{:08x?}: \"mvhd\"\n", mvhd::BOX_TYPE))?;
         self.mvhd.fmt(f)?;
-        f.write_fmt(format_args!("\t0x{:08x?}: \"trak\"\n", trak::BOX_TYPE))?;
-        self.trak.fmt(f)?;
+        for it in &self.traks {
+            f.write_fmt(format_args!("\n\t0x{:08x?}: \"trak\"\n", trak::BOX_TYPE))?;
+            it.fmt(f)?;
+        }
 
         Ok(())
     }
@@ -53,7 +55,7 @@ impl IO for moov {
                 }
                 // trak: Track
                 0x7472616b => {
-                    rst.trak = trak::parse(&mut b.payload);
+                    rst.traks.push(trak::parse(&mut b.payload));
                 }
                 _ => {
                 }
@@ -70,10 +72,12 @@ impl IO for moov {
             box_type: 0x6d766864,
             payload: self.mvhd.as_bytes(),
         }.as_bytes());
-        w.put(Object {
-            box_type: 0x7472616b,
-            payload: self.trak.as_bytes(),
-        }.as_bytes());
+        for it in self.traks.iter_mut() {
+            w.put(Object {
+                box_type: 0x7472616b,
+                payload: it.as_bytes(),
+            }.as_bytes());
+        }
 
         w
     }
@@ -382,6 +386,14 @@ impl Debug for tkhd {
         f.write_fmt(format_args!("\n\t\t\tlayer: {:?}", self.layer))?;
         f.write_fmt(format_args!("\n\t\t\talternate_group: {:?}", self.alternate_group))?;
         f.write_fmt(format_args!("\n\t\t\tvolume: {:?}", self.volume))?;
+        f.write_fmt(format_args!("\n\t\tmatrix: ["))?;
+        for i in 0..9 {
+            if 0 == i % 3 {
+                f.write_fmt(format_args!("\n\t\t\t"))?;
+            }
+            f.write_fmt(format_args!("0x{:08x?}, ",self.matrix[i]))?;
+        }
+        f.write_fmt(format_args!("\n\t\t]"))?;
         f.write_fmt(format_args!("\n\t\t\twidth: {:?}", self.width))?;
         f.write_fmt(format_args!("\n\t\t\theight: {:?}", self.height))?;
 
@@ -1059,6 +1071,7 @@ impl IO for smhd {
         w.put(self.base.as_bytes());
 
         w.put_i16(self.balance);
+        w.put_u16(0);
 
         w
     }
@@ -1279,13 +1292,22 @@ impl IO for DataEntry {
     fn as_bytes(&mut self) -> BytesMut {
         let mut w = BytesMut::new();
 
-        match self {
+        w.put(match self {
             DataEntry::url_ { base, location } => {
-                w.put(base.as_bytes());
+                Object {
+                    box_type: 0x75726c20,
+                    payload: {
+                        let mut w = BytesMut::new();
 
-                w.put(location.as_bytes());
+                        w.put(base.as_bytes());
+
+                        w.put(location.as_bytes());
+
+                        w
+                    }
+                }
             }
-        }
+        }.as_bytes());
 
         w
     }
@@ -1710,9 +1732,7 @@ impl IO for SampleEntry {
 
         match self {
             SampleEntry::Base { data_reference_index, .. } => {
-                for _ in 0..5 {
-                    w.put_u8(0);
-                }
+                w.put_bytes(0, 6);
                 w.put_u16(*data_reference_index);
             }
             SampleEntry::Visual {
@@ -1729,16 +1749,17 @@ impl IO for SampleEntry {
 
                 w.put_u16(0);
                 w.put_u16(0);
-                for _ in 0..12 {
-                    w.put_u8(0);
-                }
+                w.put_bytes(0, 12);
                 w.put_u16(*width);
                 w.put_u16(*height);
                 w.put_u32(*horiz_resolution);
                 w.put_u32(*vert_resolution);
                 w.put_u32(0);
                 w.put_u16(*frame_count);
-                w.put(&compressor_name.as_bytes()[..32]);
+                while 32 > compressor_name.len() {
+                    compressor_name.push('\0');
+                }
+                w.put_slice(&compressor_name.as_bytes()[..32]);
                 w.put_u16(*depth);
                 w.put_u16(0);
             }
@@ -1762,7 +1783,10 @@ impl IO for SampleEntry {
             } => {
                 w.put(base.as_bytes());
 
-                w.put(avcC.as_bytes());
+                w.put(Object {
+                    box_type: 0x61766343,
+                    payload: avcC.as_bytes(),
+                }.as_bytes());
             }
         }
 
@@ -2089,7 +2113,7 @@ mod tests {
     use crate::moov::moov;
 
     #[test]
-    fn chk_moof() {
+    fn chk_moov() {
         let mut b = moov {
             mvhd: Default::default(),
             trak: Default::default()
