@@ -406,6 +406,103 @@ impl IO for tkhd {
 }
 
 #[allow(non_camel_case_types)]
+pub struct mdia {
+    mdhd: mdhd,
+    hdlr: hdlr,
+    minf: minf,
+}
+
+impl Debug for mdia {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\t\t0x6d646864: \"mdhd\"\n"))?;
+        self.mdhd.fmt(f)?;
+        f.write_fmt(format_args!("\n\t\t\t0x68646c72: \"hdlr\"\n"))?;
+        self.hdlr.fmt(f)?;
+        f.write_fmt(format_args!("\n\t\t\t0x6d696e66: \"minf\"\n"))?;
+        self.minf.fmt(f)?;
+
+        Ok(())
+    }
+}
+
+impl IO for mdia {
+    fn parse(r: &mut BytesMut) -> Self {
+        let mut rst = Self {
+            mdhd: mdhd {
+                base: FullBox { version: 0, flags: 0 },
+                creation_time: 0,
+                modification_time: 0,
+                timescale: 0,
+                duration: 0,
+                language: 0
+            },
+            hdlr: hdlr {
+                base: FullBox { version: 0, flags: 0 },
+                handler_type: 0,
+                name: "".to_string()
+            },
+            minf: minf {
+                mhd: MediaInformationHeader::Unknown,
+                dinf: dinf { dref: dref { base: FullBox { version: 0, flags: 0 }, entries: vec![] } },
+                stbl: stbl {
+                    stsd: stsd { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
+                    stts: stts { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
+                    stsc: stsc { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
+                    stsz: stsz {
+                        base: FullBox { version: 0, flags: 0 },
+                        sample_size: 0,
+                        entries: vec![]
+                    },
+                    stco: stco { base: FullBox { version: 0, flags: 0 }, entries: vec![] }
+                }
+            }
+        };
+
+        while 0 < r.len() {
+            let mut b = Box::parse(r);
+
+            match b.box_type {
+                // mdhd: Media Header
+                0x6d646864 => {
+                    rst.mdhd = mdhd::parse(&mut b.payload);
+                }
+                // hdlr: Handler Reference
+                0x68646c72 => {
+                    rst.hdlr = hdlr::parse(&mut b.payload);
+                }
+                // minf: Media Information
+                0x6d696e66 => {
+                    rst.minf = minf::parse(&mut b.payload);
+                }
+                _ => {
+                }
+            }
+        }
+
+        rst
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        w.put(Box {
+            box_type: 0x6d646864,
+            payload: self.mdhd.as_bytes(),
+        }.as_bytes());
+        w.put(Box {
+            box_type: 0x68646c72,
+            payload: self.hdlr.as_bytes(),
+        }.as_bytes());
+        w.put(Box {
+            box_type: 0x6d696e66,
+            payload: self.minf.as_bytes(),
+        }.as_bytes());
+
+        w
+    }
+}
+
+#[allow(non_camel_case_types)]
 pub struct mdhd {
     base: FullBox,
 

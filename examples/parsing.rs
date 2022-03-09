@@ -81,37 +81,8 @@ fn parse_trak(mut buf: BytesMut) {
             }
             // mdia: Meida
             0x6d646961 => {
-                parse_mdia(b.payload);
-            }
-            _ => {
-            }
-        }
-    }
-}
-
-fn parse_mdia(mut buf: BytesMut) {
-    while 0 < buf.len() {
-        let mut b = fmp4::Box::parse(&mut buf);
-
-        eprintln!("\t\t\t0x{:08x?}: {:?}", b.box_type, std::str::from_utf8(&b.box_type.to_be_bytes()).unwrap_or(""));
-        match b.box_type {
-            // mdhd: Media Header
-            0x6d646864 => {
-                let mdhd = fmp4::mdhd::parse(&mut b.payload);
-
-                eprintln!("{:?}", mdhd);
-            }
-            // hdlr: Handler Reference
-            0x68646c72 => {
-                let hdlr = fmp4::hdlr::parse(&mut b.payload);
-
-                eprintln!("{:?}", hdlr);
-            }
-            // minf: Media Information
-            0x6d696e66 => {
-                let minf = fmp4::minf::parse(&mut b.payload);
-
-                eprintln!("{:?}", minf);
+                let mdia = fmp4::mdia::parse(&mut b.payload);
+                eprintln!("{:?}", mdia);
             }
             _ => {
             }
