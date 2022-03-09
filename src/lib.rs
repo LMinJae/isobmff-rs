@@ -58,6 +58,15 @@ pub struct FullBox {
     flags: u32,
 }
 
+impl FullBox {
+    pub fn new(version: u8, flags: u32) -> Self {
+        Self {
+            version,
+            flags,
+        }
+    }
+}
+
 impl IO for FullBox {
     fn parse(r: &mut BytesMut) -> Self {
         let t = r.get_u32();
@@ -140,6 +149,15 @@ pub struct moov {
     trak: trak,
 }
 
+impl Default for moov {
+    fn default() -> Self {
+        Self {
+            mvhd: Default::default(),
+            trak: Default::default(),
+        }
+    }
+}
+
 impl Debug for moov {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("\t0x6d766864: \"mvhd\"\n"))?;
@@ -153,39 +171,7 @@ impl Debug for moov {
 
 impl IO for moov {
     fn parse(r: &mut BytesMut) -> Self {
-        let mut rst = Self {
-            mvhd: Default::default(),
-            trak: trak { tkhd: Default::default(), mdia: mdia {
-                mdhd: mdhd {
-                    base: FullBox { version: 0, flags: 0 },
-                    creation_time: 0,
-                    modification_time: 0,
-                    timescale: 0,
-                    duration: 0,
-                    language: 0
-                },
-                hdlr: hdlr {
-                    base: FullBox { version: 0, flags: 0 },
-                    handler_type: 0,
-                    name: "".to_string()
-                },
-                minf: minf {
-                    mhd: MediaInformationHeader::Unknown,
-                    dinf: dinf { dref: dref { base: FullBox { version: 0, flags: 0 }, entries: vec![] } },
-                    stbl: stbl {
-                        stsd: stsd { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
-                        stts: stts { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
-                        stsc: stsc { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
-                        stsz: stsz {
-                            base: FullBox { version: 0, flags: 0 },
-                            sample_size: 0,
-                            entries: vec![]
-                        },
-                        stco: stco { base: FullBox { version: 0, flags: 0 }, entries: vec![] }
-                    }
-                }
-            } }
-        };
+        let mut rst = Self::default();
 
         while 0 < r.len() {
             let mut b = Box::parse(r);
@@ -234,6 +220,42 @@ pub struct mvhd {
     next_track_id: u32,
 }
 
+impl Default for mvhd {
+    //! extends FullBox(‘mvhd’, version, 0) {
+    //!     if (version==1) {
+    //!         unsigned int(64) creation_time;
+    //!         unsigned int(64) modification_time;
+    //!         unsigned int(32) timescale;
+    //!         unsigned int(64) duration;
+    //!     } else { // version==0
+    //!         unsigned int(32) creation_time;
+    //!         unsigned int(32) modification_time;
+    //!         unsigned int(32) timescale;
+    //!         unsigned int(32) duration;
+    //!     }
+    //!     template int(32) rate = 0x00010000; // typically 1.0
+    //!     template int(16) volume = 0x0100; // typically, full volume
+    //!     const bit(16) reserved = 0;
+    //!     const unsigned int(32)[2] reserved = 0;
+    //!     template int(32)[9] matrix = { 0x00010000,0,0,0,0x00010000,0,0,0,0x40000000 };
+    //!     // Unity matrix
+    //!     bit(32)[6] pre_defined = 0;
+    //!     unsigned int(32) next_track_ID;
+    //! }
+    fn default() -> Self {
+        Self {
+            creation_time: 0,
+            modification_time: 0,
+            timescale: 0,
+            duration: 0,
+            rate: 0x00010000,
+            volume: 0x0100,
+            matrix: [0x00010000,0,0,0,0x00010000,0,0,0,0x40000000],
+            next_track_id: 0,
+        }
+    }
+}
+
 impl Debug for mvhd {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("\t\tcreation_time: {:?}", self.creation_time))?;
@@ -253,21 +275,6 @@ impl Debug for mvhd {
         f.write_fmt(format_args!("\n\t\tnext_track_ID: {:?}", self.next_track_id))?;
 
         Ok(())
-    }
-}
-
-impl Default for mvhd {
-    fn default() -> Self {
-        Self {
-            creation_time: 0,
-            modification_time: 0,
-            timescale: 0,
-            duration: 0,
-            rate: 0x00010000,
-            volume: 0x0100,
-            matrix: [0x00010000,0,0,0,0x00010000,0,0,0,0x40000000],
-            next_track_id: 0
-        }
     }
 }
 
@@ -361,6 +368,15 @@ pub struct trak {
     mdia: mdia,
 }
 
+impl Default for trak {
+    fn default() -> Self {
+        Self {
+            tkhd: Default::default(),
+            mdia: Default::default(),
+        }
+    }
+}
+
 impl Debug for trak {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("\t\t0x746b6864: \"tkhd\"\n"))?;
@@ -374,39 +390,7 @@ impl Debug for trak {
 
 impl IO for trak {
     fn parse(r: &mut BytesMut) -> Self {
-        let mut rst = Self {
-            tkhd: Default::default(),
-            mdia: mdia {
-                mdhd: mdhd {
-                    base: FullBox { version: 0, flags: 0 },
-                    creation_time: 0,
-                    modification_time: 0,
-                    timescale: 0,
-                    duration: 0,
-                    language: 0
-                },
-                hdlr: hdlr {
-                    base: FullBox { version: 0, flags: 0 },
-                    handler_type: 0,
-                    name: "".to_string()
-                },
-                minf: minf {
-                    mhd: MediaInformationHeader::Unknown,
-                    dinf: dinf { dref: dref { base: FullBox { version: 0, flags: 0 }, entries: vec![] } },
-                    stbl: stbl {
-                        stsd: stsd { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
-                        stts: stts { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
-                        stsc: stsc { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
-                        stsz: stsz {
-                            base: FullBox { version: 0, flags: 0 },
-                            sample_size: 0,
-                            entries: vec![]
-                        },
-                        stco: stco { base: FullBox { version: 0, flags: 0 }, entries: vec![] }
-                    }
-                }
-            }
-        };
+        let mut rst = Self::default();
 
         while 0 < r.len() {
             let mut b = Box::parse(r);
@@ -460,6 +444,48 @@ pub struct tkhd {
     height: u32,
 }
 
+impl Default for tkhd {
+    //! extends FullBox(‘tkhd’, version, flags){
+    //!     if (version==1) {
+    //!         unsigned int(64) creation_time;
+    //!         unsigned int(64) modification_time;
+    //!         unsigned int(32) track_ID;
+    //!         const unsigned int(32) reserved = 0;
+    //!         unsigned int(64) duration;
+    //!     } else { // version==0
+    //!         unsigned int(32) creation_time;
+    //!         unsigned int(32) modification_time;
+    //!         unsigned int(32) track_ID;
+    //!         const unsigned int(32) reserved = 0;
+    //!         unsigned int(32) duration;
+    //!     }
+    //!     const unsigned int(32)[2] reserved = 0;
+    //!     template int(16) layer = 0;
+    //!     template int(16) alternate_group = 0;
+    //!     template int(16) volume = {if track_is_audio 0x0100 else 0};
+    //!     const unsigned int(16) reserved = 0;
+    //!     template int(32)[9] matrix= { 0x00010000,0,0,0,0x00010000,0,0,0,0x40000000 };
+    //!     // unity matrix
+    //!     unsigned int(32) width;
+    //!     unsigned int(32) height;
+    //! }
+    fn default() -> Self {
+        Self {
+            base: FullBox { version: 0, flags: 0 },
+            creation_time: 0,
+            modification_time: 0,
+            track_id: 0,
+            duration: 0,
+            layer: 0,
+            alternate_group: 0,
+            volume: 0,
+            matrix: [0x00010000,0,0,0,0x00010000,0,0,0,0x40000000],
+            width: 0,
+            height: 0,
+        }
+    }
+}
+
 impl Debug for tkhd {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("\t\t\tcreation_time: {:?}", self.creation_time))?;
@@ -474,24 +500,6 @@ impl Debug for tkhd {
         f.write_fmt(format_args!("\n\t\t\theight: {:?}", self.height))?;
 
         Ok(())
-    }
-}
-
-impl Default for tkhd {
-    fn default() -> Self {
-        Self {
-            base: FullBox { version: 0, flags: 0 },
-            creation_time: 0,
-            modification_time: 0,
-            track_id: 0,
-            duration: 0,
-            layer: 0,
-            alternate_group: 0,
-            volume: 0,
-            matrix: [0x00010000,0,0,0,0x00010000,0,0,0,0x40000000],
-            width: 0,
-            height: 0
-        }
     }
 }
 
@@ -591,6 +599,16 @@ pub struct mdia {
     minf: minf,
 }
 
+impl Default for mdia {
+    fn default() -> Self {
+        Self {
+            mdhd: Default::default(),
+            hdlr: Default::default(),
+            minf: Default::default(),
+        }
+    }
+}
+
 impl Debug for mdia {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("\t\t\t0x6d646864: \"mdhd\"\n"))?;
@@ -606,36 +624,7 @@ impl Debug for mdia {
 
 impl IO for mdia {
     fn parse(r: &mut BytesMut) -> Self {
-        let mut rst = Self {
-            mdhd: mdhd {
-                base: FullBox { version: 0, flags: 0 },
-                creation_time: 0,
-                modification_time: 0,
-                timescale: 0,
-                duration: 0,
-                language: 0
-            },
-            hdlr: hdlr {
-                base: FullBox { version: 0, flags: 0 },
-                handler_type: 0,
-                name: "".to_string()
-            },
-            minf: minf {
-                mhd: MediaInformationHeader::Unknown,
-                dinf: dinf { dref: dref { base: FullBox { version: 0, flags: 0 }, entries: vec![] } },
-                stbl: stbl {
-                    stsd: stsd { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
-                    stts: stts { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
-                    stsc: stsc { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
-                    stsz: stsz {
-                        base: FullBox { version: 0, flags: 0 },
-                        sample_size: 0,
-                        entries: vec![]
-                    },
-                    stco: stco { base: FullBox { version: 0, flags: 0 }, entries: vec![] }
-                }
-            }
-        };
+        let mut rst = Self::default();
 
         while 0 < r.len() {
             let mut b = Box::parse(r);
@@ -692,6 +681,35 @@ pub struct mdhd {
     language: u16,
 }
 
+impl Default for mdhd {
+    //! extends FullBox(‘mdhd’, version, 0) {
+    //!     if (version==1) {
+    //!         unsigned int(64) creation_time;
+    //!         unsigned int(64) modification_time;
+    //!         unsigned int(32) timescale;
+    //!         unsigned int(64) duration;
+    //!     } else { // version==0
+    //!         unsigned int(32) creation_time;
+    //!         unsigned int(32) modification_time;
+    //!         unsigned int(32) timescale;
+    //!         unsigned int(32) duration;
+    //!     }
+    //!     bit(1) pad = 0;
+    //!     unsigned int(5)[3] language; // ISO-639-2/T language code
+    //!     unsigned int(16) pre_defined = 0;
+    //! }
+    fn default() -> Self {
+        Self {
+            base: FullBox::new(0, 0),
+            creation_time: 0,
+            modification_time: 0,
+            timescale: 0,
+            duration: 0,
+            language: 0,
+        }
+    }
+}
+
 impl Debug for mdhd {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("\t\t\t\tcreation_time: {:?}", self.creation_time))?;
@@ -712,11 +730,8 @@ impl Debug for mdhd {
 
 impl IO for mdhd {
     fn parse(r: &mut BytesMut) -> Self {
-        let version = r.get_u8();
-        let _flags = r.split_to(3);
-
         let mut rst = Self {
-            base: FullBox { version, flags: 0 },
+            base: FullBox::parse(r),
             creation_time: 0,
             modification_time: 0,
             timescale: 0,
@@ -730,7 +745,7 @@ impl IO for mdhd {
                 modification_time,
                 timescale,
                 duration,
-            ) = if 1 == version {
+            ) = if 1 == rst.base.version {
                 (
                     r.get_u64(),
                     r.get_u64(),
@@ -795,6 +810,22 @@ pub struct hdlr {
     name: String,
 }
 
+impl Default for hdlr {
+    //! extends FullBox(‘hdlr’, version = 0, 0) {
+    //!     unsigned int(32) pre_defined = 0;
+    //!     unsigned int(32) handler_type;
+    //!     const unsigned int(32)[3] reserved = 0;
+    //!     string name;
+    //! }
+    fn default() -> Self {
+        Self {
+            base: FullBox::new(0, 0),
+            handler_type: 0,
+            name: "".to_owned(),
+        }
+    }
+}
+
 impl Debug for hdlr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if let Ok(str) = std::str::from_utf8(&self.handler_type.to_be_bytes()) {
@@ -847,6 +878,16 @@ pub struct minf {
     stbl: stbl,
 }
 
+impl Default for minf {
+    fn default() -> Self {
+        Self {
+            mhd: MediaInformationHeader::Unknown,
+            dinf: Default::default(),
+            stbl: Default::default(),
+        }
+    }
+}
+
 impl Debug for minf {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match &self.mhd {
@@ -879,21 +920,7 @@ impl Debug for minf {
 
 impl IO for minf {
     fn parse(r: &mut BytesMut) -> Self {
-        let mut rst = Self {
-            mhd: MediaInformationHeader::Unknown,
-            dinf: dinf { dref: dref { base: FullBox { version: 0, flags: 0 }, entries: vec![] } },
-            stbl: stbl {
-                stsd: stsd { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
-                stts: stts { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
-                stsc: stsc { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
-                stsz: stsz {
-                    base: FullBox { version: 0, flags: 0 },
-                    sample_size: 0,
-                    entries: vec![]
-                },
-                stco: stco { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
-            },
-        };
+        let mut rst = Self::default();
         
         while 0 < r.len() {
             let mut b = Box::parse(r);
@@ -1018,6 +1045,20 @@ pub struct vmhd {
     opcolor: [u16; 3],
 }
 
+impl Default for vmhd {
+    //! extends FullBox(‘vmhd’, version = 0, 1) {
+    //!     template unsigned int(16) graphicsmode = 0; // copy, see below
+    //!     template unsigned int(16)[3] opcolor = {0, 0, 0};
+    //! }
+    fn default() -> Self {
+        Self {
+            base: FullBox::new(0, 1),
+            graphicsmode: 0,
+            opcolor: [0_u16; 3],
+        }
+    }
+}
+
 impl Debug for vmhd {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("\t\t\t\t\tgraphicsmode: {:?}", self.graphicsmode))?;
@@ -1064,6 +1105,19 @@ pub struct smhd {
     balance: i16,
 }
 
+impl Default for smhd {
+    //! extends FullBox(‘smhd’, version = 0, 0) {
+    //!     template int(16) balance = 0;
+    //!     const unsigned int(16) reserved = 0;
+    //! }
+    fn default() -> Self {
+        Self {
+            base: FullBox::new(0, 0),
+            balance: 0,
+        }
+    }
+}
+
 impl Debug for smhd {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("\t\t\t\t\tbalance: {:?}", self.balance))?;
@@ -1105,6 +1159,24 @@ pub struct hmhd {
     avg_pdu_size: u16,
     max_bitrate: u16,
     avg_bitrate: u16,
+}
+
+impl Default for hmhd {
+    //! extends FullBox(’hdhd’, version = 0, flags) {unsigned int(16) maxPDUsize;
+    //!     unsigned int(16) avgPDUsize;
+    //!     unsigned int(32) maxbitrate;
+    //!     unsigned int(32) avgbitrate;
+    //!     unsigned int(32) reserved = 0;
+    //! }
+    fn default() -> Self {
+        Self {
+            base: FullBox::new(0, 0),
+            max_pdu_size: 0,
+            avg_pdu_size: 0,
+            max_bitrate: 0,
+            avg_bitrate: 0,
+        }
+    }
 }
 
 impl Debug for hmhd {
@@ -1158,6 +1230,16 @@ pub struct nmhd {
     base: FullBox,
 }
 
+impl Default for nmhd {
+    //! extends FullBox(’nmhd’, version = 0, flags) {
+    //! }
+    fn default() -> Self {
+        Self {
+            base: FullBox::new(0, 0),
+        }
+    }
+}
+
 impl Debug for nmhd {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("\t\t\t\t\tflags: {:?}", self.base.flags))?;
@@ -1189,6 +1271,14 @@ pub struct dinf {
     dref: dref,
 }
 
+impl Default for dinf {
+    fn default() -> Self {
+        Self {
+            dref: Default::default(),
+        }
+    }
+}
+
 impl Debug for dinf {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("\t\t\t\t\t0x64726566: \"dref\""))?;
@@ -1208,11 +1298,9 @@ impl IO for dinf {
     fn parse(r: &mut BytesMut) -> Self {
         let mut b = Box::parse(r);
 
-        let rst = Self {
-            dref: dref::parse(&mut b.payload)
-        };
-
-        rst
+        Self {
+            dref: dref::parse(&mut b.payload),
+        }
     }
 
     fn as_bytes(&mut self) -> BytesMut {
@@ -1282,6 +1370,21 @@ pub struct dref {
     entries: Vec<DataEntry>,
 }
 
+impl Default for dref {
+    //! extends FullBox(‘dref’, version = 0, 0) {
+    //!     unsigned int(32) entry_count;
+    //!     for (i=1; i • entry_count; i++) {
+    //!         DataEntryBox(entry_version, entry_flags) data_entry;
+    //!     }
+    //! }
+    fn default() -> Self {
+        Self {
+            base: FullBox::new(0, 0),
+            entries: vec![],
+        }
+    }
+}
+
 impl IO for dref {
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self {
@@ -1322,6 +1425,18 @@ pub struct stbl {
     stco: stco,
 }
 
+impl Default for stbl {
+    fn default() -> Self {
+        Self {
+            stsd: Default::default(),
+            stts: Default::default(),
+            stsc: Default::default(),
+            stsz: Default::default(),
+            stco: Default::default(),
+        }
+    }
+}
+
 impl Debug for stbl {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("\t\t\t\t\t0x73747364: \"stsd\""))?;
@@ -1341,13 +1456,7 @@ impl Debug for stbl {
 
 impl IO for stbl {
     fn parse(r: &mut BytesMut) -> Self {
-        let mut rst = Self {
-            stsd: stsd { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
-            stts: stts { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
-            stsc: stsc { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
-            stsz: stsz { base: FullBox { version: 0, flags: 0 }, sample_size: 0, entries: vec![] },
-            stco: stco { base: FullBox { version: 0, flags: 0 }, entries: vec![] },
-        };
+        let mut rst = Self::default();
 
         while 0 < r.len() {
             let mut b = Box::parse(r);
@@ -1414,6 +1523,32 @@ pub struct stsd {
     base: FullBox,
 
     entries: Vec<SampleEntry>,
+}
+
+impl Default for stsd {
+    //! extends FullBox('stsd', 0, 0){
+    //!     int i ;
+    //!     unsigned int(32) entry_count;
+    //!     for (i = 1 ; i u entry_count ; i++){
+    //!         switch (handler_type){
+    //!             case ‘soun’: // for audio tracks
+    //!                 AudioSampleEntry();
+    //!                 break;
+    //!             case ‘vide’: // for video tracks
+    //!                 VisualSampleEntry();
+    //!                 break;
+    //!             case ‘hint’: // Hint track
+    //!                 HintSampleEntry();
+    //!                 break;
+    //!         }
+    //!     }
+    //! }
+    fn default() -> Self {
+        Self {
+            base: FullBox::new(0, 0),
+            entries: vec![],
+        }
+    }
 }
 
 impl Debug for stsd {
@@ -1718,6 +1853,23 @@ pub struct stts {
     entries: Vec<(u32, u32)>,
 }
 
+impl Default for stts {
+    //! extends FullBox(’stts’, version = 0, 0) {
+    //!     unsigned int(32) entry_count;
+    //!     int i;
+    //!     for (i=0; i < entry_count; i++) {
+    //!         unsigned int(32) sample_count;
+    //!         unsigned int(32) sample_delta;
+    //!     }
+    //! }
+    fn default() -> Self {
+        Self {
+            base: FullBox::new(0, 0),
+            entries: vec![],
+        }
+    }
+}
+
 impl Debug for stts {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("\t\t\t\t\t\tentry_count: {:?}", self.entries.len()))?;
@@ -1766,6 +1918,23 @@ pub struct stsc {
     base: FullBox,
 
     entries: Vec<(u32, u32, u32)>,
+}
+
+impl Default for stsc {
+    //! extends FullBox(‘stsc’, version = 0, 0) {
+    //!     unsigned int(32) entry_count;
+    //!     for (i=1; i u entry_count; i++) {
+    //!         unsigned int(32) first_chunk;
+    //!         unsigned int(32) samples_per_chunk;
+    //!         unsigned int(32) sample_description_index;
+    //!     }
+    //! }
+    fn default() -> Self {
+        Self {
+            base: FullBox::new(0, 0),
+            entries: vec![],
+        }
+    }
 }
 
 impl Debug for stsc {
@@ -1819,6 +1988,25 @@ pub struct stsz {
 
     sample_size: u32,
     entries: Vec<u32>,
+}
+
+impl Default for stsz {
+    //! extends FullBox(‘stsz’, version = 0, 0) {
+    //!     unsigned int(32) sample_size;
+    //!     unsigned int(32) sample_count;
+    //!     if (sample_size==0) {
+    //!         for (i=1; i u sample_count; i++) {
+    //!             unsigned int(32) entry_size;
+    //!         }
+    //!     }
+    //! }
+    fn default() -> Self {
+        Self {
+            base: FullBox::new(0, 0),
+            sample_size: 0,
+            entries: vec![],
+        }
+    }
 }
 
 impl Debug for stsz {
@@ -1876,6 +2064,21 @@ pub struct stco {
     entries: Vec<u32>,
 }
 
+impl Default for stco {
+    //! extends FullBox(‘stco’, version = 0, 0) {
+    //!     unsigned int(32) entry_count;
+    //!     for (i=1; i u entry_count; i++) {
+    //!         unsigned int(32) chunk_offset;
+    //!     }
+    //! }
+    fn default() -> Self {
+        Self {
+            base: FullBox::new(0, 0),
+            entries: vec![],
+        }
+    }
+}
+
 impl Debug for stco {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("\t\t\t\t\t\tentry_count: {:?}", self.entries.len()))?;
@@ -1923,6 +2126,15 @@ pub struct moof {
     trafs: Vec<traf>,
 }
 
+impl Default for moof {
+    fn default() -> Self {
+        Self {
+            mfhd: Default::default(),
+            trafs: vec![],
+        }
+    }
+}
+
 impl Debug for moof {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("\t0x6d666864: \"mfhd\""))?;
@@ -1939,10 +2151,7 @@ impl Debug for moof {
 
 impl IO for moof {
     fn parse(r: &mut BytesMut) -> Self {
-        let mut rst = Self {
-            mfhd: mfhd { base: FullBox { version: 0, flags: 0 }, sequence_number: 0 },
-            trafs: vec![]
-        };
+        let mut rst = Self::default();
 
         while 0 < r.len() {
             let mut b = Box::parse(r);
@@ -1990,6 +2199,18 @@ pub struct mfhd {
     sequence_number: u32,
 }
 
+impl Default for mfhd {
+    //! extends FullBox(‘mfhd’, 0, 0){
+    //!     unsigned int(32) sequence_number;
+    //! }
+    fn default() -> Self {
+        Self {
+            base: FullBox::new(0, 0),
+            sequence_number: 0,
+        }
+    }
+}
+
 impl Debug for mfhd {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("\t\tsequence_number: {:?}", self.sequence_number))?;
@@ -2023,6 +2244,15 @@ pub struct traf {
     truns: Vec<trun>,
 }
 
+impl Default for traf {
+    fn default() -> Self {
+        Self {
+            tfhd: Default::default(),
+            truns: vec![],
+        }
+    }
+}
+
 impl Debug for traf {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("\t\t0x74666864: \"tfhd\""))?;
@@ -2039,18 +2269,7 @@ impl Debug for traf {
 
 impl IO for traf {
     fn parse(r: &mut BytesMut) -> Self {
-        let mut rst = Self {
-            tfhd: tfhd {
-                base: FullBox { version: 0, flags: 0 },
-                track_id: 0,
-                base_data_offset: None,
-                sample_description_index: None,
-                default_sample_duration: None,
-                default_sample_size: None,
-                default_sample_flags: None
-            },
-            truns: vec![]
-        };
+        let mut rst = Self::default();
 
         while 0 < r.len() {
             let mut b = Box::parse(r);
@@ -2102,6 +2321,29 @@ pub struct tfhd {
     default_sample_flags: Option<u32>,
 }
 
+impl Default for tfhd {
+    //! extends FullBox(‘tfhd’, 0, tf_flags){
+    //!     unsigned int(32) track_ID;
+    //!     // all the following are optional fields
+    //!     unsigned int(64) base_data_offset;
+    //!     unsigned int(32) sample_description_index;
+    //!     unsigned int(32) default_sample_duration;
+    //!     unsigned int(32) default_sample_size;
+    //!     unsigned int(32) default_sample_flags
+    //! }
+    fn default() -> Self {
+        Self {
+            base: FullBox::new(0, 0),
+            track_id: 0,
+            base_data_offset: None,
+            sample_description_index: None,
+            default_sample_duration: None,
+            default_sample_size: None,
+            default_sample_flags: None,
+        }
+    }
+}
+
 impl Debug for tfhd {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("\t\t\tflags: {:?}", self.base.flags))?;
@@ -2137,7 +2379,7 @@ impl IO for tfhd {
             sample_description_index: None,
             default_sample_duration: None,
             default_sample_size: None,
-            default_sample_flags: None
+            default_sample_flags: None,
         };
 
         if 0 != (0x000001 & rst.base.flags) {
@@ -2209,6 +2451,30 @@ pub struct trun {
     data_offset: Option<u32>,
     first_sample_flags: Option<u32>,
     samples: Vec<(Option<u32>, Option<u32>, Option<u32>, Option<u32>)>
+}
+
+impl Default for trun {
+    //! extends FullBox(‘trun’, 0, tr_flags) {
+    //!     unsigned int(32) sample_count;
+    //!     // the following are optional fields
+    //!     signed int(32) data_offset;
+    //!     unsigned int(32) first_sample_flags;
+    //!     // all fields in the following array are optional
+    //!     {
+    //!         unsigned int(32) sample_duration;
+    //!         unsigned int(32) sample_size;
+    //!         unsigned int(32) sample_flags
+    //!         unsigned int(32) sample_composition_time_offset;
+    //!     }[ sample_count ]
+    //! }
+    fn default() -> Self {
+        Self {
+            base: FullBox::new(0, 0),
+            data_offset: None,
+            first_sample_flags: None,
+            samples: vec![],
+        }
+    }
 }
 
 impl Debug for trun {
