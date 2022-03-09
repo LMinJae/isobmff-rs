@@ -335,6 +335,13 @@ impl tkhd {
     pub const BOX_TYPE: u32 = 0x746b6864;
 }
 
+mod tkhd_flags {
+    pub(crate) const TRACK_ENABLED: u32 = 0x000001;
+    pub(crate) const TRACK_IN_MOVIE: u32 = 0x000002;
+    pub(crate) const TRACK_IN_PREVIEW: u32 = 0x000004;
+    const TRACK_SIZE_IS_ASPECT_RATIO: u32 = 0x000008;
+}
+
 impl Default for tkhd {
     //! extends FullBox(‘tkhd’, version, flags){
     //!     if (version==1) {
@@ -362,7 +369,7 @@ impl Default for tkhd {
     //! }
     fn default() -> Self {
         Self {
-            base: FullBox { version: 0, flags: 0 },
+            base: FullBox { version: 0, flags: tkhd_flags::TRACK_ENABLED | tkhd_flags::TRACK_IN_MOVIE | tkhd_flags::TRACK_IN_PREVIEW },
             creation_time: 0,
             modification_time: 0,
             track_id: 0,
@@ -2125,7 +2132,7 @@ impl IO for stco {
 mod tests {
     use bytes::{BufMut, BytesMut};
     use crate::{FullBox, IO, Object};
-    use crate::moov::{DataEntry, dinf, dref, hdlr, mdhd, mdia, MediaInformationHeader, minf, moov, mvhd, SampleEntry, smhd, stbl, stco, stsc, stsd, stsz, stts, tkhd, trak, vmhd};
+    use crate::moov::{DataEntry, dinf, dref, hdlr, mdhd, mdia, MediaInformationHeader, minf, moov, mvhd, SampleEntry, smhd, stbl, stco, stsc, stsd, stsz, stts, tkhd, tkhd_flags, trak, vmhd};
     use crate::moov::avc::avcC;
 
     #[test]
@@ -2144,7 +2151,7 @@ mod tests {
             traks: vec![
                 trak {
                     tkhd: tkhd {
-                        base: FullBox::new(0, 0),
+                        base: FullBox::new(0, tkhd_flags::TRACK_ENABLED | tkhd_flags::TRACK_IN_MOVIE | tkhd_flags::TRACK_IN_PREVIEW),
                         creation_time: 0,
                         modification_time: 3503872213,
                         track_id: 1,

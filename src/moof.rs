@@ -227,6 +227,16 @@ impl tfhd {
     pub const BOX_TYPE: u32 = 0x74666864;
 }
 
+mod tfhd_flags {
+    pub const BASE_DATA_OFFSET_PRESENT          : u32 = 0x000001;
+    pub const SAMPLE_DESCRIPTION_INDEX_PRESENT  : u32 = 0x000002;
+    pub const DEFAULT_SAMPLE_DURATION_PRESENT   : u32 = 0x000008;
+    pub const DEFAULT_SAMPLE_SIZE_PRESENT       : u32 = 0x000010;
+    pub const DEFAULT_SAMPLE_FLAG_PRESENT       : u32 = 0x000020;
+    pub const DURATION_IS_EMPTY                 : u32 = 0x010000;
+    pub const DEFAULT_BASE_IS_MOOF              : u32 = 0x020000;
+}
+
 impl Default for tfhd {
     //! extends FullBox(‘tfhd’, 0, tf_flags){
     //!     unsigned int(32) track_ID;
@@ -239,7 +249,7 @@ impl Default for tfhd {
     //! }
     fn default() -> Self {
         Self {
-            base: FullBox::new(0, 0),
+            base: FullBox::new(0, tfhd_flags::DEFAULT_BASE_IS_MOOF),
             track_id: 0,
             base_data_offset: None,
             sample_description_index: None,
@@ -256,20 +266,20 @@ impl Debug for tfhd {
 
         f.write_fmt(format_args!("\n\t\t\ttrack_id: {:?}", self.track_id))?;
 
-        if 0 != (0x000001 & self.base.flags) {
-            f.write_fmt(format_args!("\n\t\t\tbase_data_offset: {:?}", self.base_data_offset))?;
+        if let Some(v) = self.base_data_offset {
+            f.write_fmt(format_args!("\n\t\t\tbase_data_offset: {:?}", v))?;
         }
-        if 0 != (0x000002 & self.base.flags) {
-            f.write_fmt(format_args!("\n\t\t\tsample_description_index: {:?}", self.sample_description_index))?;
+        if let Some(v) = self.sample_description_index {
+            f.write_fmt(format_args!("\n\t\t\tsample_description_index: {:?}", v))?;
         }
-        if 0 != (0x000008 & self.base.flags) {
-            f.write_fmt(format_args!("\n\t\t\tdefault_sample_duration: {:?}", self.default_sample_duration))?;
+        if let Some(v) = self.default_sample_duration {
+            f.write_fmt(format_args!("\n\t\t\tdefault_sample_duration: {:?}", v))?;
         }
-        if 0 != (0x000010 & self.base.flags) {
-            f.write_fmt(format_args!("\n\t\t\tdefault_sample_size: {:?}", self.default_sample_size))?;
+        if let Some(v) = self.default_sample_size {
+            f.write_fmt(format_args!("\n\t\t\tdefault_sample_size: {:?}", v))?;
         }
-        if 0 != (0x000020 & self.base.flags) {
-            f.write_fmt(format_args!("\n\t\t\tdefault_sample_flags: {:?}", self.default_sample_flags))?;
+        if let Some(v) = self.default_sample_flags {
+            f.write_fmt(format_args!("\n\t\t\tdefault_sample_flags: {:?}", v))?;
         }
 
         Ok(())
@@ -288,19 +298,19 @@ impl IO for tfhd {
             default_sample_flags: None,
         };
 
-        if 0 != (0x000001 & rst.base.flags) {
+        if 0 != (rst.base.flags & tfhd_flags::BASE_DATA_OFFSET_PRESENT) {
             rst.base_data_offset = Some(r.get_u64());
         }
-        if 0 != (0x000002 & rst.base.flags) {
+        if 0 != (rst.base.flags & tfhd_flags::SAMPLE_DESCRIPTION_INDEX_PRESENT) {
             rst.sample_description_index = Some(r.get_u32());
         }
-        if 0 != (0x000008 & rst.base.flags) {
+        if 0 != (rst.base.flags & tfhd_flags::DEFAULT_SAMPLE_DURATION_PRESENT) {
             rst.default_sample_duration = Some(r.get_u32());
         }
-        if 0 != (0x000010 & rst.base.flags) {
+        if 0 != (rst.base.flags & tfhd_flags::DEFAULT_SAMPLE_SIZE_PRESENT) {
             rst.default_sample_size = Some(r.get_u32());
         }
-        if 0 != (0x000020 & rst.base.flags) {
+        if 0 != (rst.base.flags & tfhd_flags::DEFAULT_SAMPLE_FLAG_PRESENT) {
             rst.default_sample_flags = Some(r.get_u32());
         }
 
@@ -310,21 +320,21 @@ impl IO for tfhd {
     fn as_bytes(&mut self) -> BytesMut {
         let mut w = BytesMut::new();
 
-        self.base.flags = 0x020000; // base-is-moof
+        self.base.flags &= tfhd_flags::DEFAULT_BASE_IS_MOOF;    // Keeping base is moof
         if let Some(_) = self.base_data_offset {
-            self.base.flags |= 0x000001;
+            self.base.flags |= tfhd_flags::BASE_DATA_OFFSET_PRESENT;
         }
         if let Some(_) = self.sample_description_index {
-            self.base.flags |= 0x000002;
+            self.base.flags |= tfhd_flags::SAMPLE_DESCRIPTION_INDEX_PRESENT;
         }
         if let Some(_) = self.default_sample_duration {
-            self.base.flags |= 0x000008;
+            self.base.flags |= tfhd_flags::DEFAULT_SAMPLE_DURATION_PRESENT;
         }
         if let Some(_) = self.default_sample_size {
-            self.base.flags |= 0x000010;
+            self.base.flags |= tfhd_flags::DEFAULT_SAMPLE_SIZE_PRESENT;
         }
         if let Some(_) = self.default_sample_flags {
-            self.base.flags |= 0x000020;
+            self.base.flags |= tfhd_flags::DEFAULT_SAMPLE_FLAG_PRESENT;
         }
 
         w.put(self.base.as_bytes());
@@ -364,6 +374,15 @@ impl trun {
     pub const BOX_TYPE: u32 = 0x7472756e;
 }
 
+mod trun_flags {
+    pub const DATA_OFFSET_PRESENT                       : u32 = 0x000001;
+    pub const FIRST_SAMPLE_FLAGS_PRESENT                : u32 =0x000004;
+    pub const SAMPLE_DURATION_PRESENT                   : u32 =0x000100;
+    pub const SAMPLE_SIZE_PRESENT                       : u32 =0x000200;
+    pub const SAMPLE_FLAGS_PRESENT                      : u32 =0x000400;
+    pub const SAMPLE_COMPOSITION_TIME_OFFSETS_PRESENT   : u32 =0x000800;
+}
+
 impl Default for trun {
     //! extends FullBox(‘trun’, 0, tr_flags) {
     //!     unsigned int(32) sample_count;
@@ -391,14 +410,12 @@ impl Default for trun {
 impl Debug for trun {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("\t\t\tflags: 0x{:08x?}", self.base.flags))?;
-
-        if 0 != (0x000001 & self.base.flags) {
-            f.write_fmt(format_args!("\n\t\t\tdata_offset: {:?}", self.data_offset))?;
+        if let Some(n) = self.data_offset {
+            f.write_fmt(format_args!("\n\t\t\tdata_offset: {:?}", n))?;
         }
-        if 0 != (0x000004 & self.base.flags) {
-            f.write_fmt(format_args!("\n\t\t\tfirst_sample_flags: {:?}", self.first_sample_flags))?;
+        if let Some(n) = self.first_sample_flags {
+            f.write_fmt(format_args!("\n\t\t\tfirst_sample_flags: {:?}", n))?;
         }
-
         f.write_fmt(format_args!("\n\t\t\tsample_count: {:?}", self.samples.len()))?;
         f.write_fmt(format_args!("\n\t\t\t["))?;
         for (
@@ -439,30 +456,30 @@ impl IO for trun {
 
         let sample_count = r.get_u32();
 
-        if 0 != (0x000001 & rst.base.flags) {
+        if 0 != (rst.base.flags & trun_flags::DATA_OFFSET_PRESENT) {
             rst.data_offset = Some(r.get_u32());
         }
-        if 0 != (0x000004 & rst.base.flags) {
+        if 0 != (rst.base.flags & trun_flags::FIRST_SAMPLE_FLAGS_PRESENT) {
             rst.first_sample_flags = Some(r.get_u32());
         }
 
         for _ in 0..sample_count {
-            let sample_duration = if 0 != (0x000100 & rst.base.flags) {
+            let sample_duration = if 0 != (rst.base.flags & trun_flags::SAMPLE_DURATION_PRESENT) {
                 Some(r.get_u32())
             } else {
                 None
             };
-            let sample_size = if 0 != (0x000200 & rst.base.flags) {
+            let sample_size = if 0 != (rst.base.flags & trun_flags::SAMPLE_SIZE_PRESENT) {
                 Some(r.get_u32())
             } else {
                 None
             };
-            let sample_flags = if 0 != (0x000400 & rst.base.flags) {
+            let sample_flags = if 0 != (rst.base.flags & trun_flags::SAMPLE_FLAGS_PRESENT) {
                 Some(r.get_u32())
             } else {
                 None
             };
-            let sample_composition_time_offset = if 0 != (0x000800 & rst.base.flags) {
+            let sample_composition_time_offset = if 0 != (rst.base.flags & trun_flags::SAMPLE_COMPOSITION_TIME_OFFSETS_PRESENT) {
                 Some(r.get_u32())
             } else {
                 None
@@ -479,10 +496,10 @@ impl IO for trun {
 
         self.base.flags = 0;
         if let Some(_) = self.data_offset {
-            self.base.flags |= 0x000001;
+            self.base.flags |= trun_flags::DATA_OFFSET_PRESENT;
         }
         if let Some(_) = self.first_sample_flags {
-            self.base.flags |= 0x000004;
+            self.base.flags |= trun_flags::FIRST_SAMPLE_FLAGS_PRESENT;
         }
         if let Some((
                         sample_duration,
@@ -491,16 +508,16 @@ impl IO for trun {
                         sample_composition_time_offset,
                     )) = self.samples.first() {
             if let Some(_) = *sample_duration {
-                self.base.flags |= 0x000100;
+                self.base.flags |= trun_flags::SAMPLE_DURATION_PRESENT;
             }
             if let Some(_) = *sample_size {
-                self.base.flags |= 0x000200;
+                self.base.flags |= trun_flags::SAMPLE_SIZE_PRESENT;
             }
             if let Some(_) = *sample_flags {
-                self.base.flags |= 0x000400;
+                self.base.flags |= trun_flags::SAMPLE_FLAGS_PRESENT;
             }
             if let Some(_) = *sample_composition_time_offset {
-                self.base.flags |= 0x000800;
+                self.base.flags |= trun_flags::SAMPLE_COMPOSITION_TIME_OFFSETS_PRESENT;
             }
         }
 
