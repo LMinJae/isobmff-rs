@@ -987,6 +987,16 @@ impl Default for vmhd {
     }
 }
 
+impl vmhd {
+    pub fn new(graphicsmode: u16, red: u16, green: u16, blue: u16) -> Self {
+        Self {
+            base: FullBox::new(0, 1),
+            graphicsmode,
+            opcolor: [red, green, blue],
+        }
+    }
+}
+
 impl Debug for vmhd {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("\t\t\t\t\tgraphicsmode: {:?}", self.graphicsmode))?;
@@ -2184,11 +2194,7 @@ mod tests {
                             name: "VideoHandler\u{0}".to_owned(),
                         },
                         minf: minf {
-                            mhd: MediaInformationHeader::vmhd(vmhd {
-                                base: FullBox::new(0, 0),
-                                graphicsmode: 0,
-                                opcolor: [0, 0, 0],
-                            }),
+                            mhd: MediaInformationHeader::vmhd(vmhd::new(0, 0, 0, 0)),
                             dinf: dinf {
                                 dref: dref {
                                     base: FullBox::new(0, 0),
