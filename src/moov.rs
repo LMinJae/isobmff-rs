@@ -1,5 +1,6 @@
 mod avc;
 
+use std::cmp::min;
 use std::fmt::{Debug, Formatter};
 use bytes::{Buf, BufMut, BytesMut};
 use crate::{FullBox, IO, Object};
@@ -1673,7 +1674,17 @@ impl IO for SampleEntry {
                 let vert_resolution = b.payload.get_u32();
                 let _ = b.payload.get_u32();
                 let frame_count = b.payload.get_u16();
-                let compressor_name = std::str::from_utf8(b.payload.split_to(32).chunk()).unwrap_or("").to_owned();
+                let compressor_name = {
+                    let len = min(31, b.payload.get_u8());
+                    let mut rst = String::with_capacity(len as usize);
+
+                    rst.push_str(std::str::from_utf8(b.payload.split_to(len as usize).chunk()).unwrap());
+                    if 31 > len {
+                        let _ = b.payload.split_to((31 - len) as usize);
+                    }
+
+                    rst
+                };
                 let depth = b.payload.get_u16();
                 let _ = b.payload.get_u16();
 
@@ -1755,10 +1766,14 @@ impl IO for SampleEntry {
                 w.put_u32(*vert_resolution);
                 w.put_u32(0);
                 w.put_u16(*frame_count);
-                while 32 > compressor_name.len() {
-                    compressor_name.push('\0');
+                {
+                    let len = min(31, compressor_name.len()) as u8;
+                    w.put_u8(len);
+                    w.put_slice(&compressor_name.as_bytes()[..len as usize]);
+                    if 31 > len {
+                        w.put_bytes(0, (31 - len) as usize);
+                    }
                 }
-                w.put_slice(&compressor_name.as_bytes()[..32]);
                 w.put_u16(*depth);
                 w.put_u16(0xffff);
             }
@@ -2193,7 +2208,7 @@ mod tests {
                                                 horiz_resolution: 0x00480000,
                                                 vert_resolution: 0x00480000,
                                                 frame_count: 1,
-                                                compressor_name: std::str::from_utf8(&[0_u8; 32]).unwrap().to_owned(),
+                                                compressor_name: "".to_owned(),
                                                 depth: 24,
                                             }),
                                             avcC: avcC {
