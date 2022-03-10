@@ -335,11 +335,12 @@ impl tkhd {
     pub const BOX_TYPE: u32 = 0x746b6864;
 }
 
+#[allow(dead_code)]
 mod tkhd_flags {
     pub(crate) const TRACK_ENABLED: u32 = 0x000001;
     pub(crate) const TRACK_IN_MOVIE: u32 = 0x000002;
     pub(crate) const TRACK_IN_PREVIEW: u32 = 0x000004;
-    const TRACK_SIZE_IS_ASPECT_RATIO: u32 = 0x000008;
+    pub(crate) const TRACK_SIZE_IS_ASPECT_RATIO: u32 = 0x000008;
 }
 
 impl Default for tkhd {

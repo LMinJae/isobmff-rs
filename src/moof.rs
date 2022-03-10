@@ -227,14 +227,15 @@ impl tfhd {
     pub const BOX_TYPE: u32 = 0x74666864;
 }
 
+#[allow(dead_code)]
 mod tfhd_flags {
-    pub const BASE_DATA_OFFSET_PRESENT: u32 = 0x000001;
-    pub const SAMPLE_DESCRIPTION_INDEX_PRESENT: u32 = 0x000002;
-    pub const DEFAULT_SAMPLE_DURATION_PRESENT: u32 = 0x000008;
-    pub const DEFAULT_SAMPLE_SIZE_PRESENT: u32 = 0x000010;
-    pub const DEFAULT_SAMPLE_FLAG_PRESENT: u32 = 0x000020;
-    pub const DURATION_IS_EMPTY: u32 = 0x010000;
-    pub const DEFAULT_BASE_IS_MOOF: u32 = 0x020000;
+    pub(crate) const BASE_DATA_OFFSET_PRESENT: u32 = 0x000001;
+    pub(crate) const SAMPLE_DESCRIPTION_INDEX_PRESENT: u32 = 0x000002;
+    pub(crate) const DEFAULT_SAMPLE_DURATION_PRESENT: u32 = 0x000008;
+    pub(crate) const DEFAULT_SAMPLE_SIZE_PRESENT: u32 = 0x000010;
+    pub(crate) const DEFAULT_SAMPLE_FLAG_PRESENT: u32 = 0x000020;
+    pub(crate) const DURATION_IS_EMPTY: u32 = 0x010000;
+    pub(crate) const DEFAULT_BASE_IS_MOOF: u32 = 0x020000;
 }
 
 impl Default for tfhd {
