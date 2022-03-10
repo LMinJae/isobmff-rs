@@ -11,9 +11,9 @@ pub fn parse(r: &mut BytesMut) -> ftyp {
 #[allow(non_camel_case_types)]
 #[derive(PartialEq)]
 pub struct ftyp {
-    major_brand: u32,
-    minor_version: u32,
-    compatible_brands: Vec<u32>,
+    pub major_brand: u32,
+    pub minor_version: u32,
+    pub compatible_brands: Vec<u32>,
 }
 
 impl ftyp {

@@ -11,8 +11,8 @@ pub fn parse(r: &mut BytesMut) -> moof {
 #[allow(non_camel_case_types)]
 #[derive(PartialEq)]
 pub struct moof {
-    mfhd: mfhd,
-    trafs: Vec<traf>,
+    pub mfhd: mfhd,
+    pub trafs: Vec<traf>,
 }
 
 impl moof {
@@ -89,7 +89,7 @@ impl IO for moof {
 pub struct mfhd {
     base: FullBox,
 
-    sequence_number: u32,
+    pub sequence_number: u32,
 }
 
 impl mfhd {
@@ -138,8 +138,8 @@ impl IO for mfhd {
 #[allow(non_camel_case_types)]
 #[derive(PartialEq)]
 pub struct traf {
-    tfhd: tfhd,
-    truns: Vec<trun>,
+    pub tfhd: tfhd,
+    pub truns: Vec<trun>,
 }
 
 impl traf {
@@ -200,6 +200,10 @@ impl IO for traf {
             payload: self.tfhd.as_bytes(),
         }.as_bytes());
 
+        if let Some(trun) = self.truns.first_mut() {
+            trun.base.flags = trun_flags::FIRST_SAMPLE_FLAGS_PRESENT;
+        }
+
         for it in self.truns.iter_mut() {
             w.put(Object {
                 box_type: trun::BOX_TYPE,
@@ -215,12 +219,12 @@ impl IO for traf {
 #[derive(PartialEq)]
 pub struct tfhd {
     base: FullBox,
-    track_id: u32,
-    base_data_offset: Option<u64>,
-    sample_description_index: Option<u32>,
-    default_sample_duration: Option<u32>,
-    default_sample_size: Option<u32>,
-    default_sample_flags: Option<u32>,
+    pub track_id: u32,
+    pub base_data_offset: Option<u64>,
+    pub sample_description_index: Option<u32>,
+    pub default_sample_duration: Option<u32>,
+    pub default_sample_size: Option<u32>,
+    pub default_sample_flags: Option<u32>,
 }
 
 impl tfhd {
@@ -366,9 +370,9 @@ impl IO for tfhd {
 #[derive(PartialEq)]
 pub struct trun {
     base: FullBox,
-    data_offset: Option<u32>,
-    first_sample_flags: Option<u32>,
-    samples: Vec<(Option<u32>, Option<u32>, Option<u32>, Option<u32>)>,
+    pub data_offset: Option<u32>,
+    pub first_sample_flags: Option<u32>,
+    pub samples: Vec<(Option<u32>, Option<u32>, Option<u32>, Option<u32>)>,
 }
 
 impl trun {
@@ -495,12 +499,9 @@ impl IO for trun {
     fn as_bytes(&mut self) -> BytesMut {
         let mut w = BytesMut::new();
 
-        self.base.flags = 0;
+        self.base.flags &= trun_flags::FIRST_SAMPLE_FLAGS_PRESENT;
         if let Some(_) = self.data_offset {
             self.base.flags |= trun_flags::DATA_OFFSET_PRESENT;
-        }
-        if let Some(_) = self.first_sample_flags {
-            self.base.flags |= trun_flags::FIRST_SAMPLE_FLAGS_PRESENT;
         }
         if let Some((
                         sample_duration,
@@ -530,8 +531,8 @@ impl IO for trun {
             w.put_u32(v);
         }
 
-        if let Some(v) = self.first_sample_flags {
-            w.put_u32(v);
+        if 0 != self.base.flags & trun_flags::FIRST_SAMPLE_FLAGS_PRESENT {
+            w.put_u32(self.first_sample_flags.unwrap_or(0));
         }
 
         for (
@@ -560,8 +561,8 @@ impl IO for trun {
 
 #[cfg(test)]
 mod tests {
-    use crate::{FullBox, IO, Object};
-    use crate::moof::{mfhd, moof, tfhd, traf, trun};
+    use crate::{IO, Object};
+    use crate::moof::{mfhd, moof, traf, trun};
 
     #[test]
     fn chk_moof() {
@@ -574,84 +575,77 @@ mod tests {
                 v
             },
             trafs: vec![
-                traf {
-                    tfhd: {
-                        let mut v = tfhd::default();
+                {
+                    let mut v = traf::default();
 
-                        v.track_id = 1;
+                    v.tfhd.track_id = 1;
+                    v.truns.push({
+                        let mut v = trun::default();
+
+                        v.data_offset = Some(520);
+                        v.first_sample_flags = Some(0);
+                        v.samples.push((Some(3000), Some(9814), None, Some(0)));
+                        v.samples.push((Some(1), Some(817), None, Some(3000)));
+                        v.samples.push((Some(5999), Some(598), None, Some(0)));
+                        v.samples.push((Some(1), Some(656), None, Some(3000)));
+                        v.samples.push((Some(5999), Some(506), None, Some(0)));
+                        v.samples.push((Some(1), Some(703), None, Some(3000)));
+                        v.samples.push((Some(5999), Some(437), None, Some(0)));
+                        v.samples.push((Some(1), Some(550), None, Some(3000)));
+                        v.samples.push((Some(5999), Some(459), None, Some(0)));
+                        v.samples.push((Some(1), Some(1008), None, Some(3150)));
+                        v.samples.push((Some(6149), Some(431), None, Some(0)));
+                        v.samples.push((Some(1), Some(723), None, Some(3000)));
+                        v.samples.push((Some(5999), Some(475), None, Some(0)));
+                        v.samples.push((Some(1), Some(607), None, Some(3000)));
+                        v.samples.push((Some(5999), Some(509), None, Some(0)));
+                        v.samples.push((Some(1), Some(680), None, Some(3000)));
+                        v.samples.push((Some(5999), Some(428), None, Some(0)));
+                        v.samples.push((Some(1), Some(584), None, Some(3000)));
+                        v.samples.push((Some(5999), Some(473), None, Some(0)));
+                        v.samples.push((Some(1), Some(891), None, Some(3000)));
+                        v.samples.push((Some(5999), Some(421), None, Some(0)));
+                        v.samples.push((Some(1), Some(636), None, Some(3000)));
+                        v.samples.push((Some(2999), Some(440), None, Some(0)));
+                        v.samples.push((Some(3000), Some(562), None, Some(3000)));
 
                         v
-                    },
-                    truns: vec![
-                        trun {
-                            base: FullBox::new(0, 0x000001 | 0x000004 | 0x000100 | 0x000200 | 0x000800),
-                            data_offset: Some(520),
-                            first_sample_flags: Some(0),
-                            samples: vec![
-                                (Some(3000), Some(9814), None, Some(0)),
-                                (Some(1), Some(817), None, Some(3000)),
-                                (Some(5999), Some(598), None, Some(0)),
-                                (Some(1), Some(656), None, Some(3000)),
-                                (Some(5999), Some(506), None, Some(0)),
-                                (Some(1), Some(703), None, Some(3000)),
-                                (Some(5999), Some(437), None, Some(0)),
-                                (Some(1), Some(550), None, Some(3000)),
-                                (Some(5999), Some(459), None, Some(0)),
-                                (Some(1), Some(1008), None, Some(3150)),
-                                (Some(6149), Some(431), None, Some(0)),
-                                (Some(1), Some(723), None, Some(3000)),
-                                (Some(5999), Some(475), None, Some(0)),
-                                (Some(1), Some(607), None, Some(3000)),
-                                (Some(5999), Some(509), None, Some(0)),
-                                (Some(1), Some(680), None, Some(3000)),
-                                (Some(5999), Some(428), None, Some(0)),
-                                (Some(1), Some(584), None, Some(3000)),
-                                (Some(5999), Some(473), None, Some(0)),
-                                (Some(1), Some(891), None, Some(3000)),
-                                (Some(5999), Some(421), None, Some(0)),
-                                (Some(1), Some(636), None, Some(3000)),
-                                (Some(2999), Some(440), None, Some(0)),
-                                (Some(3000), Some(562), None, Some(3000)),
-                            ],
-                        }
-                    ],
+                    });
+
+                    v
                 },
-                traf {
-                    tfhd: {
-                        let mut v = tfhd::default();
+                {
+                    let mut v = traf::default();
 
-                        v.track_id = 1;
-                        v.default_sample_flags = Some(33554432);
+                    v.tfhd.track_id = 2;
+                    v.tfhd.default_sample_flags = Some(33554432);
+                    v.truns.push({
+                        let mut v = trun::default();
+
+                        v.data_offset = Some(23928);
+                        v.samples.push((Some(6), None, None, None));
+                        v.samples.push((Some(169), None, None, None));
+                        v.samples.push((Some(145), None, None, None));
+                        v.samples.push((Some(24), None, None, None));
+                        v.samples.push((Some(6), None, None, None));
+                        v.samples.push((Some(6), None, None, None));
+                        v.samples.push((Some(6), None, None, None));
+                        v.samples.push((Some(6), None, None, None));
+                        v.samples.push((Some(6), None, None, None));
+                        v.samples.push((Some(6), None, None, None));
+                        v.samples.push((Some(6), None, None, None));
+                        v.samples.push((Some(6), None, None, None));
+                        v.samples.push((Some(6), None, None, None));
+                        v.samples.push((Some(6), None, None, None));
+                        v.samples.push((Some(6), None, None, None));
+                        v.samples.push((Some(6), None, None, None));
+                        v.samples.push((Some(6), None, None, None));
+                        v.samples.push((Some(6), None, None, None));
 
                         v
-                    },
-                    truns: vec![
-                        trun {
-                            base: FullBox::new(0, 0x000001 | 0x000200),
-                            data_offset: Some(23928),
-                            first_sample_flags: None,
-                            samples: vec![
-                                (Some(6), None, None, None),
-                                (Some(169), None, None, None),
-                                (Some(145), None, None, None),
-                                (Some(24), None, None, None),
-                                (Some(6), None, None, None),
-                                (Some(6), None, None, None),
-                                (Some(6), None, None, None),
-                                (Some(6), None, None, None),
-                                (Some(6), None, None, None),
-                                (Some(6), None, None, None),
-                                (Some(6), None, None, None),
-                                (Some(6), None, None, None),
-                                (Some(6), None, None, None),
-                                (Some(6), None, None, None),
-                                (Some(6), None, None, None),
-                                (Some(6), None, None, None),
-                                (Some(6), None, None, None),
-                                (Some(6), None, None, None),
-                            ],
-                        }
-                    ],
+                    });
+
+                    v
                 },
             ],
         };

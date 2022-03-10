@@ -4,7 +4,7 @@ use std::fmt::{Debug, Formatter};
 use bytes::{Buf, BufMut, BytesMut};
 
 use crate::{FullBox, IO, Object};
-use crate::moov::avc::avcC;
+pub use crate::moov::avc::avcC;
 
 mod avc;
 
@@ -15,8 +15,8 @@ pub fn parse(r: &mut BytesMut) -> moov {
 #[allow(non_camel_case_types)]
 #[derive(PartialEq)]
 pub struct moov {
-    mvhd: mvhd,
-    traks: Vec<trak>,
+    pub mvhd: mvhd,
+    pub traks: Vec<trak>,
 }
 
 impl moov {
@@ -70,6 +70,8 @@ impl IO for moov {
     fn as_bytes(&mut self) -> BytesMut {
         let mut w = BytesMut::new();
 
+        self.mvhd.next_track_id = 1 + self.traks.len() as u32;
+
         w.put(Object {
             box_type: 0x6d766864,
             payload: self.mvhd.as_bytes(),
@@ -88,14 +90,14 @@ impl IO for moov {
 #[allow(non_camel_case_types)]
 #[derive(PartialEq)]
 pub struct mvhd {
-    creation_time: u64,
-    modification_time: u64,
-    timescale: u32,
-    duration: u64,
-    rate: u32,
-    volume: u16,
-    matrix: [u32; 9],
-    next_track_id: u32,
+    pub creation_time: u64,
+    pub modification_time: u64,
+    pub timescale: u32,
+    pub duration: u64,
+    pub rate: u32,
+    pub volume: u16,
+    pub matrix: [u32; 9],
+    pub next_track_id: u32,
 }
 
 impl mvhd {
@@ -247,8 +249,8 @@ impl IO for mvhd {
 #[allow(non_camel_case_types)]
 #[derive(PartialEq)]
 pub struct trak {
-    tkhd: tkhd,
-    mdia: mdia,
+    pub tkhd: tkhd,
+    pub mdia: mdia,
 }
 
 impl trak {
@@ -319,16 +321,16 @@ impl IO for trak {
 pub struct tkhd {
     base: FullBox,
 
-    creation_time: u64,
-    modification_time: u64,
-    track_id: u32,
-    duration: u64,
-    layer: u16,
-    alternate_group: u16,
-    volume: u16,
-    matrix: [u32; 9],
-    width: u32,
-    height: u32,
+    pub creation_time: u64,
+    pub modification_time: u64,
+    pub track_id: u32,
+    pub duration: u64,
+    pub layer: u16,
+    pub alternate_group: u16,
+    pub volume: u16,
+    pub matrix: [u32; 9],
+    pub width: u32,
+    pub height: u32,
 }
 
 impl tkhd {
@@ -336,11 +338,11 @@ impl tkhd {
 }
 
 #[allow(dead_code)]
-mod tkhd_flags {
-    pub(crate) const TRACK_ENABLED: u32 = 0x000001;
-    pub(crate) const TRACK_IN_MOVIE: u32 = 0x000002;
-    pub(crate) const TRACK_IN_PREVIEW: u32 = 0x000004;
-    pub(crate) const TRACK_SIZE_IS_ASPECT_RATIO: u32 = 0x000008;
+pub mod tkhd_flags {
+    pub const TRACK_ENABLED: u32 = 0x000001;
+    pub const TRACK_IN_MOVIE: u32 = 0x000002;
+    pub const TRACK_IN_PREVIEW: u32 = 0x000004;
+    pub const TRACK_SIZE_IS_ASPECT_RATIO: u32 = 0x000008;
 }
 
 impl Default for tkhd {
@@ -501,9 +503,9 @@ impl IO for tkhd {
 #[allow(non_camel_case_types)]
 #[derive(PartialEq)]
 pub struct mdia {
-    mdhd: mdhd,
-    hdlr: hdlr,
-    minf: minf,
+    pub mdhd: mdhd,
+    pub hdlr: hdlr,
+    pub minf: minf,
 }
 
 impl mdia {
@@ -585,11 +587,11 @@ impl IO for mdia {
 pub struct mdhd {
     base: FullBox,
 
-    creation_time: u64,
-    modification_time: u64,
-    timescale: u32,
-    duration: u64,
-    language: u16,
+    pub creation_time: u64,
+    pub modification_time: u64,
+    pub timescale: u32,
+    pub duration: u64,
+    pub language: u16,
 }
 
 impl mdhd {
@@ -620,7 +622,13 @@ impl Default for mdhd {
             modification_time: 0,
             timescale: 0,
             duration: 0,
-            language: 0,
+            language: {
+                let mut rst = 0_u16;
+                for c in "und".as_bytes() {
+                    rst = (rst << 5) | (0b11111 & (c - 0x60)) as u16;
+                }
+                rst
+            },
         }
     }
 }
@@ -721,12 +729,29 @@ impl IO for mdhd {
 pub struct hdlr {
     base: FullBox,
 
-    handler_type: u32,
-    name: String,
+    pub handler_type: u32,
+    pub name: String,
 }
 
 impl hdlr {
     pub const BOX_TYPE: u32 = 0x68646c72;
+
+    pub fn vide() -> Self {
+        let mut v = Self::default();
+
+        v.handler_type = 0x76696465;
+        v.name = "VideoHandler\u{0}".to_owned();
+
+        v
+    }
+    pub fn soun() -> Self {
+        let mut v = Self::default();
+
+        v.handler_type = 0x736f756e;
+        v.name = "SoundHandler\u{0}".to_owned();
+
+        v
+    }
 }
 
 impl Default for hdlr {
@@ -793,9 +818,9 @@ impl IO for hdlr {
 #[allow(non_camel_case_types)]
 #[derive(PartialEq)]
 pub struct minf {
-    mhd: MediaInformationHeader,
-    dinf: dinf,
-    stbl: stbl,
+    pub mhd: MediaInformationHeader,
+    pub dinf: dinf,
+    pub stbl: stbl,
 }
 
 impl minf {
@@ -926,7 +951,7 @@ impl IO for minf {
 }
 
 #[derive(Clone, PartialEq)]
-enum MediaInformationHeader {
+pub enum MediaInformationHeader {
     Unknown,
 
     #[allow(non_camel_case_types)]
@@ -964,8 +989,8 @@ impl Debug for MediaInformationHeader {
 pub struct vmhd {
     base: FullBox,
 
-    graphicsmode: u16,
-    opcolor: [u16; 3],
+    pub graphicsmode: u16,
+    pub opcolor: [u16; 3],
 }
 
 impl vmhd {
@@ -1039,7 +1064,7 @@ impl IO for vmhd {
 pub struct smhd {
     base: FullBox,
 
-    balance: i16,
+    pub balance: i16,
 }
 
 impl smhd {
@@ -1097,10 +1122,10 @@ impl IO for smhd {
 pub struct hmhd {
     base: FullBox,
 
-    max_pdu_size: u16,
-    avg_pdu_size: u16,
-    max_bitrate: u16,
-    avg_bitrate: u16,
+    pub max_pdu_size: u16,
+    pub avg_pdu_size: u16,
+    pub max_bitrate: u16,
+    pub avg_bitrate: u16,
 }
 
 impl hmhd {
@@ -1219,7 +1244,7 @@ impl IO for nmhd {
 #[allow(non_camel_case_types)]
 #[derive(PartialEq)]
 pub struct dinf {
-    dref: dref,
+    pub dref: dref,
 }
 
 impl dinf {
@@ -1343,7 +1368,7 @@ impl IO for DataEntry {
 pub struct dref {
     base: FullBox,
 
-    entries: Vec<DataEntry>,
+    pub entries: Vec<DataEntry>,
 }
 
 impl dref {
@@ -1399,11 +1424,11 @@ impl IO for dref {
 #[allow(non_camel_case_types)]
 #[derive(PartialEq)]
 pub struct stbl {
-    stsd: stsd,
-    stts: stts,
-    stsc: stsc,
-    stsz: stsz,
-    stco: stco,
+    pub stsd: stsd,
+    pub stts: stts,
+    pub stsc: stsc,
+    pub stsz: stsz,
+    pub stco: stco,
 }
 
 impl Default for stbl {
@@ -1507,7 +1532,7 @@ impl IO for stbl {
 pub struct stsd {
     base: FullBox,
 
-    entries: Vec<SampleEntry>,
+    pub entries: Vec<SampleEntry>,
 }
 
 impl stsd {
@@ -1741,7 +1766,8 @@ impl IO for SampleEntry {
             }
             // mp4a
             0x6d703461 => {
-                let _ = b.payload.get_u64();
+                let _version = b.payload.get_u16();
+                let _ = b.payload.split_to(6);
                 let channel_count = b.payload.get_u16();
                 let sample_size = b.payload.get_u16();
                 let _ = b.payload.get_u32();
@@ -1854,7 +1880,7 @@ impl SampleEntry {
 pub struct stts {
     base: FullBox,
 
-    entries: Vec<(u32, u32)>,
+    pub entries: Vec<(u32, u32)>,
 }
 
 impl stts {
@@ -1926,7 +1952,7 @@ impl IO for stts {
 pub struct stsc {
     base: FullBox,
 
-    entries: Vec<(u32, u32, u32)>,
+    pub entries: Vec<(u32, u32, u32)>,
 }
 
 impl stsc {
@@ -2000,8 +2026,8 @@ impl IO for stsc {
 pub struct stsz {
     base: FullBox,
 
-    sample_size: u32,
-    entries: Vec<u32>,
+    pub sample_size: u32,
+    pub entries: Vec<u32>,
 }
 
 impl stsz {
@@ -2080,7 +2106,7 @@ impl IO for stsz {
 pub struct stco {
     base: FullBox,
 
-    entries: Vec<u32>,
+    pub entries: Vec<u32>,
 }
 
 impl stco {
@@ -2158,7 +2184,6 @@ mod tests {
                 let mut v = mvhd::default();
 
                 v.timescale = 1000;
-                v.next_track_id = 3;
 
                 v
             },
@@ -2169,8 +2194,8 @@ mod tests {
 
                         v.modification_time = 3503872213;
                         v.track_id = 1;
-                        v.width = 26214400;
-                        v.height = 19660800;
+                        v.width = 400 << 16;
+                        v.height = 300 << 16;
 
                         v
                     },
@@ -2179,24 +2204,10 @@ mod tests {
                             let mut v = mdhd::default();
 
                             v.timescale = 90000;
-                            v.language = {
-                                let mut rst = 0_u16;
-                                for c in "und".as_bytes() {
-                                    rst = (rst << 5) | (0b11111 & (c - 0x60)) as u16;
-                                }
-                                rst
-                            };
 
                             v
                         },
-                        hdlr: {
-                            let mut v = hdlr::default();
-
-                            v.handler_type = 0x76696465;
-                            v.name = "VideoHandler\u{0}".to_owned();
-
-                            v
-                        },
+                        hdlr: hdlr::vide(),
                         minf: minf {
                             mhd: MediaInformationHeader::vmhd(vmhd::new(0, 0, 0, 0)),
                             dinf: dinf::default(),
@@ -2238,7 +2249,6 @@ mod tests {
                                                     rst
                                                 }
                                             ],
-                                            ext_high_profile: None,
                                         },
                                     });
 
@@ -2265,24 +2275,10 @@ mod tests {
                             let mut v = mdhd::default();
 
                             v.timescale = 22050;
-                            v.language = {
-                                let mut rst = 0_u16;
-                                for c in "und".as_bytes() {
-                                    rst = (rst << 5) | (0b11111 & (c - 0x60)) as u16;
-                                }
-                                rst
-                            };
 
                             v
                         },
-                        hdlr: {
-                            let mut v = hdlr::default();
-
-                            v.handler_type = 0x736f756e;
-                            v.name = "SoundHandler\u{0}".to_owned();
-
-                            v
-                        },
+                        hdlr: hdlr::soun(),
                         minf: minf {
                             mhd: MediaInformationHeader::smhd(smhd::default()),
                             dinf: dinf::default(),
