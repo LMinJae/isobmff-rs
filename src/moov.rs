@@ -1288,13 +1288,7 @@ impl IO for dinf {
         let mut w = BytesMut::new();
 
         w.put(Object {
-            box_type: {
-                let mut v = 0_u32;
-                for it in "dinf".as_bytes() {
-                    v = (v << 8) | (*it as u32);
-                }
-                v
-            },
+            box_type: dref::BOX_TYPE,
             payload: self.dref.as_bytes(),
         }.as_bytes());
 

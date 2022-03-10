@@ -14,6 +14,8 @@ pub struct avcC {
     pub(crate) length_size_minus_one: u8,
     pub(crate) sps: Vec<BytesMut>,
     pub(crate) pps: Vec<BytesMut>,
+
+    pub(crate) ext: BytesMut,
 }
 
 impl Debug for avcC {
@@ -30,6 +32,9 @@ impl Debug for avcC {
         f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\t\t\tnb_pps: {:?}", self.pps.len()))?;
         for it in &self.pps {
             f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\t\t\t\t{:x?}", it))?;
+        }
+        if 0 < self.ext.len() {
+            f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\t\t\text: {:02x?}", self.ext.chunk()))?;
         }
 
         Ok(())
@@ -66,6 +71,7 @@ impl IO for avcC {
             length_size_minus_one,
             sps,
             pps,
+            ext: r.split_to(r.len()),
         }
     }
 
@@ -84,11 +90,13 @@ impl IO for avcC {
             w.put(it.chunk());
         }
 
-        w.put_u8((self.pps.len() & 0b11111) as u8 | 0b11100000);
+        w.put_u8(self.pps.len() as u8);
         for it in &self.pps {
             w.put_u16(it.len() as u16);
             w.put(it.chunk());
         }
+
+        w.put(self.ext.chunk());
 
         w
     }
