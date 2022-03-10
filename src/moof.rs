@@ -139,6 +139,7 @@ impl IO for mfhd {
 #[derive(PartialEq)]
 pub struct traf {
     pub tfhd: tfhd,
+    pub tfdt: tfdt,
     pub truns: Vec<trun>,
 }
 
@@ -150,6 +151,7 @@ impl Default for traf {
     fn default() -> Self {
         Self {
             tfhd: Default::default(),
+            tfdt: Default::default(),
             truns: vec![],
         }
     }
@@ -159,6 +161,9 @@ impl Debug for traf {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("\t\t0x{:08x?}: \"tfhd\"", tfhd::BOX_TYPE))?;
         f.write_fmt(format_args!("\n{:?}", self.tfhd))?;
+
+        f.write_fmt(format_args!("\n\t\t0x{:08x?}: \"tfdt\"", tfdt::BOX_TYPE))?;
+        f.write_fmt(format_args!("\n{:?}", self.tfdt))?;
 
         for it in &self.truns {
             f.write_fmt(format_args!("\n\t\t0x{:08x?}: \"trun\"", trun::BOX_TYPE))?;
@@ -180,6 +185,10 @@ impl IO for traf {
                 // tfhd: Track Fragment Header
                 tfhd::BOX_TYPE => {
                     rst.tfhd = tfhd::parse(&mut b.payload);
+                }
+                // tfdt: Track Fragment Header
+                tfdt::BOX_TYPE => {
+                    rst.tfdt = tfdt::parse(&mut b.payload);
                 }
                 // trun: Track Fragment Run
                 trun::BOX_TYPE => {
@@ -360,6 +369,76 @@ impl IO for tfhd {
         }
         if let Some(v) = self.default_sample_flags {
             w.put_u32(v);
+        }
+
+        w
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[derive(PartialEq)]
+pub struct tfdt {
+    base: FullBox,
+    pub base_media_decode_time: u64,
+}
+
+impl tfdt {
+    pub const BOX_TYPE: u32 = 0x74666474;
+
+    pub fn new(base_media_decode_time: u64) -> Self {
+        Self {
+            base: FullBox::new(
+                if (u32::MAX as u64) < base_media_decode_time { 1 } else { 0 },
+                0,
+            ),
+            base_media_decode_time,
+        }
+    }
+}
+
+impl Default for tfdt {
+    fn default() -> Self {
+        Self {
+            base: FullBox::new(0, 0),
+            base_media_decode_time: 0,
+        }
+    }
+}
+
+impl Debug for tfdt {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\t\tbase_media_decode_time: {:?}", self.base_media_decode_time))?;
+
+        Ok(())
+    }
+}
+
+impl IO for tfdt {
+    fn parse(r: &mut BytesMut) -> Self {
+        let base = FullBox::parse(r);
+        let base_media_decode_time = if 1 == base.version {
+            r.get_u64()
+        } else {
+            r.get_u32() as u64
+        };
+
+        Self {
+            base,
+            base_media_decode_time,
+        }
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        self.base.version = if (u32::MAX as u64) < self.base_media_decode_time { 1 } else { 0 };
+
+        w.put(self.base.as_bytes());
+
+        if 1 == self.base.version {
+            w.put_u64(self.base_media_decode_time);
+        } else {
+            w.put_u32(self.base_media_decode_time as u32);
         }
 
         w
@@ -582,6 +661,9 @@ mod tests {
                     v.tfhd.default_sample_duration = Some(200);
                     v.tfhd.default_sample_size = Some(3815);
                     v.tfhd.default_sample_flags = Some(0);
+
+                    v.tfdt.base_media_decode_time = 60000;
+
                     v.truns.push({
                         let mut v = trun::default();
 

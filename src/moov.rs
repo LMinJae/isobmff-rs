@@ -17,6 +17,7 @@ pub fn parse(r: &mut BytesMut) -> moov {
 pub struct moov {
     pub mvhd: mvhd,
     pub traks: Vec<trak>,
+    pub mvex: mvex,
 }
 
 impl moov {
@@ -28,6 +29,7 @@ impl Default for moov {
         Self {
             mvhd: Default::default(),
             traks: vec![],
+            mvex: Default::default()
         }
     }
 }
@@ -40,6 +42,8 @@ impl Debug for moov {
             f.write_fmt(format_args!("\n\t0x{:08x?}: \"trak\"\n", trak::BOX_TYPE))?;
             it.fmt(f)?;
         }
+        f.write_fmt(format_args!("\n\t0x{:08x?}: \"mvex\"\n", mvex::BOX_TYPE))?;
+        self.mvex.fmt(f)?;
 
         Ok(())
     }
@@ -53,12 +57,16 @@ impl IO for moov {
             let mut b = Object::parse(r);
             match b.box_type {
                 // mvhd: Movie Header
-                0x6d766864 => {
+                mvhd::BOX_TYPE => {
                     rst.mvhd = mvhd::parse(&mut b.payload);
                 }
                 // trak: Track
-                0x7472616b => {
+                trak::BOX_TYPE => {
                     rst.traks.push(trak::parse(&mut b.payload));
+                }
+                // mvex: MovieExtends
+                mvex::BOX_TYPE => {
+                    rst.mvex = mvex::parse(&mut b.payload);
                 }
                 _ => {}
             }
@@ -73,12 +81,12 @@ impl IO for moov {
         self.mvhd.next_track_id = 1 + self.traks.len() as u32;
 
         w.put(Object {
-            box_type: 0x6d766864,
+            box_type: mvhd::BOX_TYPE,
             payload: self.mvhd.as_bytes(),
         }.as_bytes());
         for it in self.traks.iter_mut() {
             w.put(Object {
-                box_type: 0x7472616b,
+                box_type: trak::BOX_TYPE,
                 payload: it.as_bytes(),
             }.as_bytes());
         }
@@ -2163,12 +2171,143 @@ impl IO for stco {
     }
 }
 
+
+#[allow(non_camel_case_types)]
+#[derive(PartialEq)]
+pub struct mvex {
+    trexs: Vec<trex>,
+}
+
+impl mvex {
+    pub const BOX_TYPE: u32 = 0x6d766578;
+}
+
+impl Default for mvex {
+    fn default() -> Self {
+        Self {
+            trexs: vec![]
+        }
+    }
+}
+
+impl Debug for mvex {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for it in &self.trexs {
+            f.write_fmt(format_args!("\n\t\t0x{:08x?}: \"trex\"\n", trex::BOX_TYPE))?;
+            it.fmt(f)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl IO for mvex {
+    fn parse(r: &mut BytesMut) -> Self {
+        let mut rst = Self::default();
+
+        while 0 < r.len() {
+            let mut b = Object::parse(r);
+            match b.box_type {
+                // trex: Track Extends
+                trex::BOX_TYPE => {
+                    rst.trexs.push(trex::parse(&mut b.payload));
+                }
+                _ => {}
+            }
+        }
+
+        rst
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        for it in self.trexs.iter_mut() {
+            w.put(Object {
+                box_type: trex::BOX_TYPE,
+                payload: it.as_bytes(),
+            }.as_bytes());
+        }
+
+        w
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[derive(PartialEq)]
+pub struct trex {
+    base: FullBox,
+
+    track_id: u32,
+    default_sample_description_index: u32,
+    default_sample_duration: u32,
+    default_sample_size: u32,
+    default_sample_flags: u32,
+}
+
+impl Default for trex {
+    fn default() -> Self {
+        Self {
+            base: FullBox::new(0, 0),
+            track_id: 0,
+            default_sample_description_index: 0,
+            default_sample_duration: 0,
+            default_sample_size: 0,
+            default_sample_flags: 0
+        }
+    }
+}
+
+impl Debug for trex {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\t\ttrack_id: {:?}", self.track_id))?;
+        f.write_fmt(format_args!("\n\t\t\tdefault_sample_description_index: {:?}", self.default_sample_description_index))?;
+        f.write_fmt(format_args!("\n\t\t\tdefault_sample_duration: {:?}", self.default_sample_duration))?;
+        f.write_fmt(format_args!("\n\t\t\tdefault_sample_size: {:?}", self.default_sample_size))?;
+        f.write_fmt(format_args!("\n\t\t\tdefault_sample_flags: 0x{:08x?}", self.default_sample_flags))?;
+
+        Ok(())
+    }
+}
+
+impl IO for trex {
+    fn parse(r: &mut BytesMut) -> Self {
+        Self {
+            base: FullBox::parse(r),
+
+            track_id: r.get_u32(),
+            default_sample_description_index: r.get_u32(),
+            default_sample_duration: r.get_u32(),
+            default_sample_size: r.get_u32(),
+            default_sample_flags: r.get_u32(),
+        }
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        w.put(self.base.as_bytes());
+
+        w.put_u32(self.track_id);
+        w.put_u32(self.default_sample_description_index);
+        w.put_u32(self.default_sample_duration);
+        w.put_u32(self.default_sample_size);
+        w.put_u32(self.default_sample_flags);
+
+        w
+    }
+}
+
+impl trex {
+    pub const BOX_TYPE: u32 = 0x74726578;
+}
+
 #[cfg(test)]
 mod tests {
     use bytes::{BufMut, BytesMut};
 
     use crate::{IO, Object};
-    use crate::moov::{dinf, hdlr, mdhd, mdia, MediaInformationHeader, minf, moov, mvhd, SampleEntry, smhd, stbl, stsd, tkhd, trak, vmhd};
+    use crate::moov::{dinf, hdlr, mdhd, mdia, MediaInformationHeader, minf, moov, mvex, mvhd, SampleEntry, smhd, stbl, stsd, tkhd, trak, trex, vmhd};
     use crate::moov::avc::avcC;
 
     #[test]
@@ -2243,6 +2382,7 @@ mod tests {
                                                     rst
                                                 }
                                             ],
+                                            ext: Default::default()
                                         },
                                     });
 
@@ -2301,6 +2441,27 @@ mod tests {
                     },
                 },
             ],
+            mvex: mvex {
+                trexs: vec![
+                    {
+                        let mut v = trex::default();
+
+                        v.track_id = 1;
+                        v.default_sample_description_index = 1;
+                        v.default_sample_flags = 0x01010000;
+
+                        v
+                    },
+                    {
+                        let mut v = trex::default();
+
+                        v.track_id = 2;
+                        v.default_sample_description_index = 1;
+
+                        v
+                    },
+                ]
+            }
         };
         let mut obj = Object::parse(&mut Object {
             box_type: moov::BOX_TYPE,
