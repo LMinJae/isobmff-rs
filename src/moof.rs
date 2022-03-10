@@ -566,20 +566,21 @@ mod tests {
     #[test]
     fn chk_moof() {
         let mut b = moof {
-            mfhd: mfhd {
-                base: FullBox::new(0, 0),
-                sequence_number: 1,
+            mfhd: {
+                let mut v = mfhd::default();
+
+                v.sequence_number = 1;
+
+                v
             },
             trafs: vec![
                 traf {
-                    tfhd: tfhd {
-                        base: FullBox::new(0, 0x020000),
-                        track_id: 1,
-                        base_data_offset: None,
-                        sample_description_index: None,
-                        default_sample_duration: None,
-                        default_sample_size: None,
-                        default_sample_flags: None,
+                    tfhd: {
+                        let mut v = tfhd::default();
+
+                        v.track_id = 1;
+
+                        v
                     },
                     truns: vec![
                         trun {
@@ -616,14 +617,13 @@ mod tests {
                     ],
                 },
                 traf {
-                    tfhd: tfhd {
-                        base: FullBox { version: 0, flags: 0x000020 | 0x020000 },
-                        track_id: 2,
-                        base_data_offset: None,
-                        sample_description_index: None,
-                        default_sample_duration: None,
-                        default_sample_size: None,
-                        default_sample_flags: Some(33554432),
+                    tfhd: {
+                        let mut v = tfhd::default();
+
+                        v.track_id = 1;
+                        v.default_sample_flags = Some(33554432);
+
+                        v
                     },
                     truns: vec![
                         trun {

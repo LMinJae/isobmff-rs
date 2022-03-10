@@ -1286,6 +1286,15 @@ pub enum DataEntry {
     }
 }
 
+impl Default for DataEntry {
+    fn default() -> Self {
+        Self::url_ {
+            base: FullBox::new(0, 1),
+            location: "".to_owned(),
+        }
+    }
+}
+
 impl IO for DataEntry {
     fn parse(r: &mut BytesMut) -> Self {
         let mut b = Object::parse(r);
@@ -1351,7 +1360,7 @@ impl Default for dref {
     fn default() -> Self {
         Self {
             base: FullBox::new(0, 0),
-            entries: vec![],
+            entries: vec![DataEntry::default()],
         }
     }
 }
@@ -2138,217 +2147,165 @@ impl IO for stco {
 mod tests {
     use bytes::{BufMut, BytesMut};
 
-    use crate::{FullBox, IO, Object};
-    use crate::moov::{DataEntry, dinf, dref, hdlr, mdhd, mdia, MediaInformationHeader, minf, moov, mvhd, SampleEntry, smhd, stbl, stco, stsc, stsd, stsz, stts, tkhd, tkhd_flags, trak, vmhd};
+    use crate::{IO, Object};
+    use crate::moov::{dinf, hdlr, mdhd, mdia, MediaInformationHeader, minf, moov, mvhd, SampleEntry, smhd, stbl, stsd, tkhd, trak, vmhd};
     use crate::moov::avc::avcC;
 
     #[test]
     fn chk_moov() {
         let mut b = moov {
-            mvhd: mvhd {
-                creation_time: 0,
-                modification_time: 0,
-                timescale: 1000,
-                duration: 0,
-                rate: 0x00010000,
-                volume: 0x0100,
-                matrix: [0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000],
-                next_track_id: 3,
+            mvhd: {
+                let mut v = mvhd::default();
+
+                v.timescale = 1000;
+                v.next_track_id = 3;
+
+                v
             },
             traks: vec![
                 trak {
-                    tkhd: tkhd {
-                        base: FullBox::new(0, tkhd_flags::TRACK_ENABLED | tkhd_flags::TRACK_IN_MOVIE | tkhd_flags::TRACK_IN_PREVIEW),
-                        creation_time: 0,
-                        modification_time: 3503872213,
-                        track_id: 1,
-                        duration: 0,
-                        layer: 0,
-                        alternate_group: 0,
-                        volume: 0x0100,
-                        matrix: [0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000],
-                        width: 26214400,
-                        height: 19660800,
+                    tkhd: {
+                        let mut v = tkhd::default();
+
+                        v.modification_time = 3503872213;
+                        v.track_id = 1;
+                        v.width = 26214400;
+                        v.height = 19660800;
+
+                        v
                     },
                     mdia: mdia {
-                        mdhd: mdhd {
-                            base: FullBox::new(0, 0),
-                            creation_time: 0,
-                            modification_time: 0,
-                            timescale: 90000,
-                            duration: 0,
-                            language: {
+                        mdhd: {
+                            let mut v = mdhd::default();
+
+                            v.timescale = 90000;
+                            v.language = {
                                 let mut rst = 0_u16;
                                 for c in "und".as_bytes() {
                                     rst = (rst << 5) | (0b11111 & (c - 0x60)) as u16;
                                 }
                                 rst
-                            },
+                            };
+
+                            v
                         },
-                        hdlr: hdlr {
-                            base: FullBox::new(0, 0),
-                            handler_type: 0x76696465,
-                            name: "VideoHandler\u{0}".to_owned(),
+                        hdlr: {
+                            let mut v = hdlr::default();
+
+                            v.handler_type = 0x76696465;
+                            v.name = "VideoHandler\u{0}".to_owned();
+
+                            v
                         },
                         minf: minf {
                             mhd: MediaInformationHeader::vmhd(vmhd::new(0, 0, 0, 0)),
-                            dinf: dinf {
-                                dref: dref {
-                                    base: FullBox::new(0, 0),
-                                    entries: vec![
-                                        DataEntry::url_ {
-                                            base: FullBox::new(0, 0x000001),
-                                            location: "".to_owned(),
-                                        }
-                                    ],
-                                }
-                            },
-                            stbl: stbl {
-                                stsd: stsd {
-                                    base: FullBox::new(0, 0),
-                                    entries: vec![
-                                        SampleEntry::avc1 {
-                                            base: Box::new(SampleEntry::Visual {
-                                                base: Box::new(SampleEntry::Base {
-                                                    handler_type: 0x61766331,
-                                                    data_reference_index: 1,
-                                                }),
-                                                width: 400,
-                                                height: 300,
-                                                horiz_resolution: 0x00480000,
-                                                vert_resolution: 0x00480000,
-                                                frame_count: 1,
-                                                compressor_name: "".to_owned(),
-                                                depth: 24,
+                            dinf: dinf::default(),
+                            stbl: {
+                                let mut v = stbl::default();
+
+                                v.stsd = {
+                                    let mut v = stsd::default();
+
+                                    v.entries.push(SampleEntry::avc1 {
+                                        base: Box::new(SampleEntry::Visual {
+                                            base: Box::new(SampleEntry::Base {
+                                                handler_type: 0x61766331,
+                                                data_reference_index: 1,
                                             }),
-                                            avcC: avcC {
-                                                configuration_version: 1,
-                                                profile_indication: 77,
-                                                profile_compatibility: 64,
-                                                level_indication: 21,
-                                                length_size_minus_one: 3,
-                                                sps: vec![
-                                                    {
-                                                        let mut rst = BytesMut::new();
-                                                        rst.put(&b"'M@\x15\xa9\x182\x13\xfd\xe0\rA\x80A\xad\xb0\xad{\xdf\x01"[..]);
-                                                        rst
-                                                    }
-                                                ],
-                                                pps: vec![
-                                                    {
-                                                        let mut rst = BytesMut::new();
-                                                        rst.put(&b"(\xde\t\x88"[..]);
-                                                        rst
-                                                    }
-                                                ],
-                                                ext_high_profile: None,
-                                            },
-                                        }
-                                    ],
-                                },
-                                stts: stts {
-                                    base: FullBox::new(0, 0),
-                                    entries: vec![],
-                                },
-                                stsc: stsc {
-                                    base: FullBox::new(0, 0),
-                                    entries: vec![],
-                                },
-                                stsz: stsz {
-                                    base: FullBox::new(0, 0),
-                                    sample_size: 0,
-                                    entries: vec![],
-                                },
-                                stco: stco {
-                                    base: FullBox::new(0, 0),
-                                    entries: vec![],
-                                },
+                                            width: 400,
+                                            height: 300,
+                                            horiz_resolution: 0x00480000,
+                                            vert_resolution: 0x00480000,
+                                            frame_count: 1,
+                                            compressor_name: "".to_owned(),
+                                            depth: 24,
+                                        }),
+                                        avcC: avcC {
+                                            configuration_version: 1,
+                                            profile_indication: 77,
+                                            profile_compatibility: 64,
+                                            level_indication: 21,
+                                            length_size_minus_one: 3,
+                                            sps: vec![{
+                                                let mut rst = BytesMut::new();
+                                                rst.put(&b"'M@\x15\xa9\x182\x13\xfd\xe0\rA\x80A\xad\xb0\xad{\xdf\x01"[..]);
+                                                rst
+                                            }],
+                                            pps: vec![
+                                                {
+                                                    let mut rst = BytesMut::new();
+                                                    rst.put(&b"(\xde\t\x88"[..]);
+                                                    rst
+                                                }
+                                            ],
+                                            ext_high_profile: None,
+                                        },
+                                    });
+
+                                    v
+                                };
+
+                                v
                             },
                         },
                     },
                 },
                 trak {
-                    tkhd: tkhd {
-                        base: FullBox::new(0, 0),
-                        creation_time: 0,
-                        modification_time: 3503872213,
-                        track_id: 2,
-                        duration: 0,
-                        layer: 0,
-                        alternate_group: 1,
-                        volume: 0x0100,
-                        matrix: [0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000],
-                        width: 0,
-                        height: 0,
+                    tkhd: {
+                        let mut v = tkhd::default();
+
+                        v.modification_time = 3503872213;
+                        v.track_id = 2;
+                        v.alternate_group = 1;
+
+                        v
                     },
                     mdia: mdia {
-                        mdhd: mdhd {
-                            base: FullBox::new(0, 0),
-                            creation_time: 0,
-                            modification_time: 0,
-                            timescale: 22050,
-                            duration: 0,
-                            language: {
+                        mdhd: {
+                            let mut v = mdhd::default();
+
+                            v.timescale = 22050;
+                            v.language = {
                                 let mut rst = 0_u16;
                                 for c in "und".as_bytes() {
                                     rst = (rst << 5) | (0b11111 & (c - 0x60)) as u16;
                                 }
                                 rst
-                            },
+                            };
+
+                            v
                         },
-                        hdlr: hdlr {
-                            base: FullBox::new(0, 0),
-                            handler_type: 0x736f756e,
-                            name: "SoundHandler\u{0}".to_owned(),
+                        hdlr: {
+                            let mut v = hdlr::default();
+
+                            v.handler_type = 0x736f756e;
+                            v.name = "SoundHandler\u{0}".to_owned();
+
+                            v
                         },
                         minf: minf {
-                            mhd: MediaInformationHeader::smhd(smhd {
-                                base: FullBox::new(0, 0),
-                                balance: 0,
-                            }),
-                            dinf: dinf {
-                                dref: dref {
-                                    base: FullBox::new(0, 0),
-                                    entries: vec![
-                                        DataEntry::url_ {
-                                            base: FullBox::new(0, 0x000001),
-                                            location: "".to_owned(),
-                                        }
-                                    ],
-                                }
-                            },
-                            stbl: stbl {
-                                stsd: stsd {
-                                    base: FullBox::new(0, 0),
-                                    entries: vec![
-                                        SampleEntry::Audio {
-                                            base: Box::new(SampleEntry::Base {
-                                                handler_type: 0x6d703461,
-                                                data_reference_index: 1,
-                                            }),
-                                            channel_count: 2,
-                                            sample_size: 16,
-                                            sample_rate: 1445068800,
-                                        }
-                                    ],
-                                },
-                                stts: stts {
-                                    base: FullBox::new(0, 0),
-                                    entries: vec![],
-                                },
-                                stsc: stsc {
-                                    base: FullBox::new(0, 0),
-                                    entries: vec![],
-                                },
-                                stsz: stsz {
-                                    base: FullBox::new(0, 0),
-                                    sample_size: 0,
-                                    entries: vec![],
-                                },
-                                stco: stco {
-                                    base: FullBox::new(0, 0),
-                                    entries: vec![],
-                                },
+                            mhd: MediaInformationHeader::smhd(smhd::default()),
+                            dinf: dinf::default(),
+                            stbl: {
+                                let mut v = stbl::default();
+
+                                v.stsd =  {
+                                    let mut v = stsd::default();
+
+                                    v.entries.push(SampleEntry::Audio {
+                                        base: Box::new(SampleEntry::Base {
+                                            handler_type: 0x6d703461,
+                                            data_reference_index: 1,
+                                        }),
+                                        channel_count: 2,
+                                        sample_size: 16,
+                                        sample_rate: 1445068800,
+                                    });
+
+                                    v
+                                };
+
+                                v
                             },
                         },
                     },
