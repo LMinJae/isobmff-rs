@@ -1,7 +1,7 @@
 use std::fs::{self, File};
 use std::io::Read;
 
-use bytes::{Buf, BytesMut};
+use bytes::BytesMut;
 
 use isobmff::IO;
 
@@ -13,12 +13,15 @@ fn main() {
         f.read(&mut buffer).expect("buffer overflow");
 
         buffer
-    })("bipbop-fragmented.mp4").as_slice());
+    })("avc_fragmented.mp4").as_slice());
 
     parse(s);
 }
 
 fn parse(mut buf: BytesMut) {
+    let mut moov = isobmff::moov::moov::default();
+    let mut moof = isobmff::moof::moof::default();
+
     while 0 < buf.len() {
         let mut b = isobmff::Object::parse(&mut buf);
 
@@ -31,76 +34,18 @@ fn parse(mut buf: BytesMut) {
             }
             // moov: Movie Box
             isobmff::moov::moov::BOX_TYPE => {
-                let moov = isobmff::moov::parse(&mut b.payload);
+                moov = isobmff::moov::parse(&mut b.payload);
                 eprintln!("{:?}", moov);
             }
             // moof: Movie Fragment
             isobmff::moof::moof::BOX_TYPE => {
-                let moof = isobmff::moof::parse(&mut b.payload);
+                moof = isobmff::moof::parse(&mut b.payload);
                 eprintln!("{:?}", moof);
             }
             // mdat: Media Data
             0x6d646174 => {
-                parse_mdat(b.payload);
-                return;
             }
             _ => {}
         }
     }
-}
-
-fn parse_mdat(mut buf: BytesMut) {
-    eprintln!("\tAVC");
-    parse_avc(buf.split_to(9814));
-    parse_avc(buf.split_to(817));
-    parse_avc(buf.split_to(598));
-    parse_avc(buf.split_to(656));
-    parse_avc(buf.split_to(506));
-    parse_avc(buf.split_to(703));
-    parse_avc(buf.split_to(437));
-    parse_avc(buf.split_to(550));
-    parse_avc(buf.split_to(459));
-    parse_avc(buf.split_to(1008));
-    parse_avc(buf.split_to(431));
-    parse_avc(buf.split_to(723));
-    parse_avc(buf.split_to(475));
-    parse_avc(buf.split_to(607));
-    parse_avc(buf.split_to(509));
-    parse_avc(buf.split_to(680));
-    parse_avc(buf.split_to(428));
-    parse_avc(buf.split_to(584));
-    parse_avc(buf.split_to(473));
-    parse_avc(buf.split_to(891));
-    parse_avc(buf.split_to(421));
-    parse_avc(buf.split_to(636));
-    parse_avc(buf.split_to(440));
-    parse_avc(buf.split_to(562));
-
-    eprintln!("\tAAC");
-    parse_aac(buf.split_to(6));
-    parse_aac(buf.split_to(169));
-    parse_aac(buf.split_to(145));
-    parse_aac(buf.split_to(24));
-    parse_aac(buf.split_to(6));
-    parse_aac(buf.split_to(6));
-    parse_aac(buf.split_to(6));
-    parse_aac(buf.split_to(6));
-    parse_aac(buf.split_to(6));
-    parse_aac(buf.split_to(6));
-    parse_aac(buf.split_to(6));
-    parse_aac(buf.split_to(6));
-    parse_aac(buf.split_to(6));
-    parse_aac(buf.split_to(6));
-    parse_aac(buf.split_to(6));
-    parse_aac(buf.split_to(6));
-    parse_aac(buf.split_to(6));
-    parse_aac(buf.split_to(6));
-}
-
-fn parse_avc(buf: BytesMut) {
-    eprintln!("\t\t{:02x?}", buf.chunk());
-}
-
-fn parse_aac(buf: BytesMut) {
-    eprintln!("\t\t{:02x?}", buf.chunk());
 }

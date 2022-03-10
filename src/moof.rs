@@ -284,7 +284,7 @@ impl Debug for tfhd {
             f.write_fmt(format_args!("\n\t\t\tdefault_sample_size: {:?}", v))?;
         }
         if let Some(v) = self.default_sample_flags {
-            f.write_fmt(format_args!("\n\t\t\tdefault_sample_flags: {:?}", v))?;
+            f.write_fmt(format_args!("\n\t\t\tdefault_sample_flags: 0x{:06x?}", v))?;
         }
 
         Ok(())
@@ -419,7 +419,7 @@ impl Debug for trun {
             f.write_fmt(format_args!("\n\t\t\tdata_offset: {:?}", n))?;
         }
         if let Some(n) = self.first_sample_flags {
-            f.write_fmt(format_args!("\n\t\t\tfirst_sample_flags: {:?}", n))?;
+            f.write_fmt(format_args!("\n\t\t\tfirst_sample_flags: 0x{:06x?}", n))?;
         }
         f.write_fmt(format_args!("\n\t\t\tsample_count: {:?}", self.samples.len()))?;
         f.write_fmt(format_args!("\n\t\t\t["))?;
@@ -437,7 +437,7 @@ impl Debug for trun {
                 f.write_fmt(format_args!("\n\t\t\t\t\tsample_size: {:?}", n))?;
             }
             if let Some(n) = sample_flags {
-                f.write_fmt(format_args!("\n\t\t\t\t\tsample_flags: {:?}", n))?;
+                f.write_fmt(format_args!("\n\t\t\t\t\tsample_flags: 0x{:06x?}", n))?;
             }
             if let Some(n) = sample_composition_time_offset {
                 f.write_fmt(format_args!("\n\t\t\t\t\tsample_composition_time_offset: {:?}", n))?;
@@ -499,7 +499,7 @@ impl IO for trun {
     fn as_bytes(&mut self) -> BytesMut {
         let mut w = BytesMut::new();
 
-        self.base.flags &= trun_flags::FIRST_SAMPLE_FLAGS_PRESENT;
+        self.base.flags = 0;
         if let Some(_) = self.data_offset {
             self.base.flags |= trun_flags::DATA_OFFSET_PRESENT;
         }
@@ -531,8 +531,8 @@ impl IO for trun {
             w.put_u32(v);
         }
 
-        if 0 != self.base.flags & trun_flags::FIRST_SAMPLE_FLAGS_PRESENT {
-            w.put_u32(self.first_sample_flags.unwrap_or(0));
+        if let Some(v) = self.first_sample_flags {
+            w.put_u32(v);
         }
 
         for (
@@ -579,35 +579,15 @@ mod tests {
                     let mut v = traf::default();
 
                     v.tfhd.track_id = 1;
+                    v.tfhd.default_sample_duration = Some(200);
+                    v.tfhd.default_sample_size = Some(3815);
+                    v.tfhd.default_sample_flags = Some(0);
                     v.truns.push({
                         let mut v = trun::default();
 
-                        v.data_offset = Some(520);
-                        v.first_sample_flags = Some(0);
-                        v.samples.push((Some(3000), Some(9814), None, Some(0)));
-                        v.samples.push((Some(1), Some(817), None, Some(3000)));
-                        v.samples.push((Some(5999), Some(598), None, Some(0)));
-                        v.samples.push((Some(1), Some(656), None, Some(3000)));
-                        v.samples.push((Some(5999), Some(506), None, Some(0)));
-                        v.samples.push((Some(1), Some(703), None, Some(3000)));
-                        v.samples.push((Some(5999), Some(437), None, Some(0)));
-                        v.samples.push((Some(1), Some(550), None, Some(3000)));
-                        v.samples.push((Some(5999), Some(459), None, Some(0)));
-                        v.samples.push((Some(1), Some(1008), None, Some(3150)));
-                        v.samples.push((Some(6149), Some(431), None, Some(0)));
-                        v.samples.push((Some(1), Some(723), None, Some(3000)));
-                        v.samples.push((Some(5999), Some(475), None, Some(0)));
-                        v.samples.push((Some(1), Some(607), None, Some(3000)));
-                        v.samples.push((Some(5999), Some(509), None, Some(0)));
-                        v.samples.push((Some(1), Some(680), None, Some(3000)));
-                        v.samples.push((Some(5999), Some(428), None, Some(0)));
-                        v.samples.push((Some(1), Some(584), None, Some(3000)));
-                        v.samples.push((Some(5999), Some(473), None, Some(0)));
-                        v.samples.push((Some(1), Some(891), None, Some(3000)));
-                        v.samples.push((Some(5999), Some(421), None, Some(0)));
-                        v.samples.push((Some(1), Some(636), None, Some(3000)));
-                        v.samples.push((Some(2999), Some(440), None, Some(0)));
-                        v.samples.push((Some(3000), Some(562), None, Some(3000)));
+                        v.data_offset = Some(196);
+                        v.samples.push((None, Some(3815), Some(0), None));
+                        v.samples.push((None, Some(344), Some(0x810000), None));
 
                         v
                     });
@@ -618,29 +598,14 @@ mod tests {
                     let mut v = traf::default();
 
                     v.tfhd.track_id = 2;
-                    v.tfhd.default_sample_flags = Some(33554432);
+                    v.tfhd.default_sample_duration = Some(33554432);
+                    v.tfhd.default_sample_size = Some(12);
                     v.truns.push({
                         let mut v = trun::default();
 
                         v.data_offset = Some(23928);
                         v.samples.push((Some(6), None, None, None));
                         v.samples.push((Some(169), None, None, None));
-                        v.samples.push((Some(145), None, None, None));
-                        v.samples.push((Some(24), None, None, None));
-                        v.samples.push((Some(6), None, None, None));
-                        v.samples.push((Some(6), None, None, None));
-                        v.samples.push((Some(6), None, None, None));
-                        v.samples.push((Some(6), None, None, None));
-                        v.samples.push((Some(6), None, None, None));
-                        v.samples.push((Some(6), None, None, None));
-                        v.samples.push((Some(6), None, None, None));
-                        v.samples.push((Some(6), None, None, None));
-                        v.samples.push((Some(6), None, None, None));
-                        v.samples.push((Some(6), None, None, None));
-                        v.samples.push((Some(6), None, None, None));
-                        v.samples.push((Some(6), None, None, None));
-                        v.samples.push((Some(6), None, None, None));
-                        v.samples.push((Some(6), None, None, None));
 
                         v
                     });
