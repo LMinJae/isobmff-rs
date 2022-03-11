@@ -1,7 +1,7 @@
 use std::fs::{self, File};
 use std::io::{Read, Write};
 
-use bytes::{Buf, BytesMut};
+use bytes::{Buf, BufMut, BytesMut};
 
 use isobmff::{IO, Object};
 
@@ -55,18 +55,22 @@ fn parse(mut buf: BytesMut) {
             isobmff::moof::moof::BOX_TYPE => {
                 moof = isobmff::moof::parse(&mut b.payload);
                 eprintln!("{:?}", moof);
-
-                f.write_all(Object {
-                    box_type: isobmff::moof::moof::BOX_TYPE,
-                    payload: moof.as_bytes()
-                }.as_bytes().chunk()).unwrap();
             }
             // mdat: Media Data
             0x6d646174 => {
-                f.write_all(Object {
+                let mut w = BytesMut::with_capacity(16 + moof.len() + b.payload.len());
+
+                w.put(Object {
+                    box_type: isobmff::moof::moof::BOX_TYPE,
+                    payload: moof.as_bytes()
+                }.as_bytes());
+
+                w.put(Object {
                     box_type: 0x6d646174,
                     payload: b.payload
-                }.as_bytes().chunk()).unwrap();
+                }.as_bytes());
+
+                f.write_all(w.chunk()).unwrap();
             }
             _ => {}
         }
