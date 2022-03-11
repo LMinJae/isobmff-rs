@@ -50,6 +50,16 @@ impl Debug for moov {
 }
 
 impl IO for moov {
+    fn len(&self) -> usize {
+        let mut v = 16 + self.mvhd.len() + self.mvex.len();
+
+        for it in &self.traks {
+            v += 8 + it.len();
+        }
+
+        v
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self::default();
 
@@ -178,6 +188,18 @@ impl Debug for mvhd {
 }
 
 impl IO for mvhd {
+    fn len(&self) -> usize {
+        let mut v = self.base.len() + 96;
+
+        if (u32::MAX as u64) < self.creation_time ||
+            (u32::MAX as u64) < self.modification_time ||
+            (u32::MAX as u64) < self.duration {
+            v += 12;
+        }
+
+            v
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self::default();
 
@@ -293,6 +315,10 @@ impl Debug for trak {
 }
 
 impl IO for trak {
+    fn len(&self) -> usize {
+        16 + self.tkhd.len() + self.mdia.len()
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self::default();
 
@@ -427,6 +453,18 @@ impl Debug for tkhd {
 }
 
 impl IO for tkhd {
+    fn len(&self) -> usize {
+        let mut v = self.base.len() + 80;
+
+        if (u32::MAX as u64) < self.creation_time ||
+            (u32::MAX as u64) < self.modification_time ||
+            (u32::MAX as u64) < self.duration {
+            v += 12;
+        }
+
+        v
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self::default();
         rst.base = FullBox::parse(r);
@@ -551,6 +589,10 @@ impl Debug for mdia {
 }
 
 impl IO for mdia {
+    fn len(&self) -> usize {
+        24 + self.mdhd.len() + self.hdlr.len() + self.minf.len()
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self::default();
 
@@ -666,6 +708,18 @@ impl Debug for mdhd {
 }
 
 impl IO for mdhd {
+    fn len(&self) -> usize {
+        let mut v = self.base.len() + 20;
+
+        if (u32::MAX as u64) < self.creation_time ||
+            (u32::MAX as u64) < self.modification_time ||
+            (u32::MAX as u64) < self.duration {
+            v += 12;
+        }
+
+        v
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self {
             base: FullBox::parse(r),
@@ -801,6 +855,10 @@ impl Debug for hdlr {
 }
 
 impl IO for hdlr {
+    fn len(&self) -> usize {
+        self.base.len() + 20 + self.name.len()
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let base = FullBox::parse(r);
 
@@ -885,6 +943,20 @@ impl Debug for minf {
 }
 
 impl IO for minf {
+    fn len(&self) -> usize {
+        let mut v = 16 + self.dinf.len() + self.stbl.len();
+
+        v += match &self.mhd {
+            MediaInformationHeader::vmhd(mhd) => { 8 + mhd.len() }
+            MediaInformationHeader::smhd(mhd) => { 8 + mhd.len() }
+            MediaInformationHeader::hmhd(mhd) => { 8 + mhd.len() }
+            MediaInformationHeader::nmhd(mhd) => { 8 + mhd.len() }
+            _ => { 0 }
+        };
+
+        v
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self::default();
 
@@ -1048,6 +1120,10 @@ impl Debug for vmhd {
 }
 
 impl IO for vmhd {
+    fn len(&self) -> usize {
+        self.base.len() + 8
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let base = FullBox::parse(r);
 
@@ -1110,6 +1186,10 @@ impl Debug for smhd {
 }
 
 impl IO for smhd {
+    fn len(&self) -> usize {
+        self.base.len() + 4
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let base = FullBox::parse(r);
 
@@ -1179,6 +1259,10 @@ impl Debug for hmhd {
 }
 
 impl IO for hmhd {
+    fn len(&self) -> usize {
+        self.base.len() + 12
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let base = FullBox::parse(r);
 
@@ -1241,6 +1325,10 @@ impl Debug for nmhd {
 }
 
 impl IO for nmhd {
+    fn len(&self) -> usize {
+        self.base.len()
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let base = FullBox::parse(r);
 
@@ -1293,6 +1381,10 @@ impl Debug for dinf {
 }
 
 impl IO for dinf {
+    fn len(&self) -> usize {
+        8 + self.dref.len()
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let mut b = Object::parse(r);
 
@@ -1332,6 +1424,12 @@ impl Default for DataEntry {
 }
 
 impl IO for DataEntry {
+    fn len(&self) -> usize {
+        8 + match self {
+            DataEntry::url_ { base, location } => { base.len() + location.len() }
+        }
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let mut b = Object::parse(r);
         match b.box_type {
@@ -1402,6 +1500,16 @@ impl Default for dref {
 }
 
 impl IO for dref {
+    fn len(&self) -> usize {
+        let mut v = self.base.len() + 4;
+
+        for it in &self.entries {
+            v += it.len();
+        }
+
+        v
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self {
             base: FullBox::parse(r),
@@ -1476,6 +1584,10 @@ impl Debug for stbl {
 }
 
 impl IO for stbl {
+    fn len(&self) -> usize {
+        40 + self.stsd.len() + self.stts.len() + self.stsc.len() + self.stsz.len() + self.stco.len()
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self::default();
 
@@ -1588,6 +1700,16 @@ impl Debug for stsd {
 }
 
 impl IO for stsd {
+    fn len(&self) -> usize {
+        let mut v = self.base.len() + 4;
+
+        for it in &self.entries {
+            v += it.len();
+        }
+
+        v
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self {
             base: FullBox::parse(r),
@@ -1710,6 +1832,15 @@ impl Debug for SampleEntry {
 }
 
 impl IO for SampleEntry {
+    fn len(&self) -> usize {
+        match self {
+            SampleEntry::Visual { base, .. } => { base.len() + 70 }
+            SampleEntry::Base { .. } => { 16 }
+            SampleEntry::Audio { base, .. } => { base.len() + 20 }
+            SampleEntry::avc1 { base, avcC } => { base.len() + 8 + avcC.len() }
+        }
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let mut b = Object::parse(r);
         let handler_type = b.box_type;
@@ -1928,6 +2059,10 @@ impl Debug for stts {
 }
 
 impl IO for stts {
+    fn len(&self) -> usize {
+        self.base.len() + 4 + 8 * self.entries.len()
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self {
             base: FullBox::parse(r),
@@ -2001,6 +2136,10 @@ impl Debug for stsc {
 }
 
 impl IO for stsc {
+    fn len(&self) -> usize {
+        self.base.len() + 4 + 12 * self.entries.len()
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self {
             base: FullBox::parse(r),
@@ -2077,6 +2216,16 @@ impl Debug for stsz {
 }
 
 impl IO for stsz {
+    fn len(&self) -> usize {
+        let mut v = self.base.len() + 4;
+
+        if 0 == self.sample_size {
+            v += 4 + 4 * self.entries.len()
+        }
+
+        v
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self {
             base: FullBox::parse(r),
@@ -2151,6 +2300,10 @@ impl Debug for stco {
 }
 
 impl IO for stco {
+    fn len(&self) -> usize {
+        self.base.len() + 4 + 4 * self.entries.len()
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self {
             base: FullBox::parse(r),
@@ -2211,6 +2364,16 @@ impl Debug for mvex {
 }
 
 impl IO for mvex {
+    fn len(&self) -> usize {
+        let mut v = 0;
+
+        for it in &self.trexs {
+            v += 8 + it.len();
+        }
+
+        v
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self::default();
 
@@ -2280,6 +2443,10 @@ impl Debug for trex {
 }
 
 impl IO for trex {
+    fn len(&self) -> usize {
+        self.base.len() + 20
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         Self {
             base: FullBox::parse(r),
@@ -2478,6 +2645,7 @@ mod tests {
         }.as_bytes());
 
         assert_eq!(moov::BOX_TYPE, obj.box_type);
+        assert_eq!(b.len(), obj.payload.len());
         assert_eq!(b, moov::parse(&mut obj.payload));
     }
 }

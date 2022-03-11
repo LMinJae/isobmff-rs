@@ -42,6 +42,19 @@ impl Debug for avcC {
 }
 
 impl IO for avcC {
+    fn len(&self) -> usize {
+        let mut v = 7 + self.ext.len();
+
+        for it in &self.sps {
+            v += 2 + it.len();
+        }
+        for it in &self.pps {
+            v += 2 + it.len();
+        }
+
+        v
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let configuration_version = r.get_u8();
         let profile_indication = r.get_u8();

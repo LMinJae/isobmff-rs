@@ -10,6 +10,10 @@ pub struct Object {
 }
 
 impl IO for Object {
+    fn len(&self) -> usize {
+        4 + self.payload.len()
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let mut size = r.get_u32() as u64;
         let box_type = r.get_u32();
@@ -66,6 +70,10 @@ impl FullBox {
 }
 
 impl IO for FullBox {
+    fn len(&self) -> usize {
+        4
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let t = r.get_u32();
 

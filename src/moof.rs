@@ -43,6 +43,16 @@ impl Debug for moof {
 }
 
 impl IO for moof {
+    fn len(&self) -> usize {
+        let mut v = 8 + self.mfhd.len();
+
+        for it in &self.trafs {
+            v += 8 + it.len();
+        }
+
+        v
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self::default();
 
@@ -124,6 +134,10 @@ impl Debug for mfhd {
 }
 
 impl IO for mfhd {
+    fn len(&self) -> usize {
+        self.base.len() + 4
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         Self {
             base: FullBox::parse(r),
@@ -182,6 +196,16 @@ impl Debug for traf {
 }
 
 impl IO for traf {
+    fn len(&self) -> usize {
+        let mut v = 8 + self.tfhd.len();
+
+        for it in &self.truns {
+            v += 8 + it.len();
+        }
+
+        v
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self::default();
 
@@ -308,6 +332,28 @@ impl Debug for tfhd {
 }
 
 impl IO for tfhd {
+    fn len(&self) -> usize {
+        let mut v = self.base.len() + 4;
+
+        if 0 != self.base.flags & tfhd_flags::BASE_DATA_OFFSET_PRESENT {
+            v += 4;
+        }
+        if 0 != (self.base.flags & tfhd_flags::SAMPLE_DESCRIPTION_INDEX_PRESENT) {
+            v += 4;
+        }
+        if 0 != (self.base.flags & tfhd_flags::DEFAULT_SAMPLE_DURATION_PRESENT) {
+            v += 4;
+        }
+        if 0 != (self.base.flags & tfhd_flags::DEFAULT_SAMPLE_SIZE_PRESENT) {
+            v += 4;
+        }
+        if 0 != (self.base.flags & tfhd_flags::DEFAULT_SAMPLE_FLAG_PRESENT) {
+            v += 4;
+        }
+
+        v
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self {
             base: FullBox::parse(r),
@@ -421,6 +467,10 @@ impl Debug for tfdt {
 }
 
 impl IO for tfdt {
+    fn len(&self) -> usize {
+        self.base.len() + if 1 == base.version { 8 } else { 4 }
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let base = FullBox::parse(r);
         let base_media_decode_time = if 1 == base.version {
@@ -541,6 +591,37 @@ impl Debug for trun {
 }
 
 impl IO for trun {
+    fn len(&self) -> usize {
+        let mut v = self.base.len() + 4;
+
+        if 0 != (self.base.flags & trun_flags::DATA_OFFSET_PRESENT) {
+            v += 4;
+        }
+        if 0 != (self.base.flags & trun_flags::FIRST_SAMPLE_FLAGS_PRESENT) {
+            v += 4;
+        }
+        v += self.samples.len() * {
+            let mut v = 0;
+
+            if 0 != (self.base.flags & trun_flags::SAMPLE_DURATION_PRESENT) {
+                v += 4;
+            }
+            if 0 != (self.base.flags & trun_flags::SAMPLE_SIZE_PRESENT) {
+                v += 4;
+            }
+            if 0 != (self.base.flags & trun_flags::SAMPLE_FLAGS_PRESENT) {
+                v += 4;
+            }
+            if 0 != (self.base.flags & trun_flags::SAMPLE_COMPOSITION_TIME_OFFSETS_PRESENT) {
+                v += 4;
+            }
+
+            v
+        };
+
+        v
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         let mut rst = Self {
             base: FullBox::parse(r),
@@ -721,6 +802,7 @@ mod tests {
         }.as_bytes());
 
         assert_eq!(moof::BOX_TYPE, obj.box_type);
+        assert_eq!(b.len(), obj.payload.len());
         assert_eq!(b, moof::parse(&mut obj.payload));
     }
 }

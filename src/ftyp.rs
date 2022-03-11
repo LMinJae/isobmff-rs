@@ -43,6 +43,10 @@ impl Debug for ftyp {
 }
 
 impl IO for ftyp {
+    fn len(&self) -> usize {
+        8 + 4 * self.compatible_brands.len()
+    }
+
     fn parse(r: &mut BytesMut) -> Self {
         Self {
             major_brand: r.get_u32(),
@@ -92,6 +96,7 @@ mod tests {
         }.as_bytes());
 
         assert_eq!(ftyp::BOX_TYPE, obj.box_type);
+        assert_eq!(b.len(), obj.payload.len());
         assert_eq!(b, ftyp::parse(&mut obj.payload));
     }
 }
