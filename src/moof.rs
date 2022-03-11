@@ -183,8 +183,10 @@ impl Debug for traf {
         f.write_fmt(format_args!("\t\t0x{:08x?}: \"tfhd\"", tfhd::BOX_TYPE))?;
         f.write_fmt(format_args!("\n{:?}", self.tfhd))?;
 
-        f.write_fmt(format_args!("\n\t\t0x{:08x?}: \"tfdt\"", tfdt::BOX_TYPE))?;
-        f.write_fmt(format_args!("\n{:?}", self.tfdt))?;
+        if let Some(tfdt) = &self.tfdt {
+            f.write_fmt(format_args!("\n\t\t0x{:08x?}: \"tfdt\"", tfdt::BOX_TYPE))?;
+            f.write_fmt(format_args!("\n{:?}", tfdt))?;
+        }
 
         for it in &self.truns {
             f.write_fmt(format_args!("\n\t\t0x{:08x?}: \"trun\"", trun::BOX_TYPE))?;
