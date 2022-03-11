@@ -465,7 +465,7 @@ impl tfdt {
 impl Default for tfdt {
     fn default() -> Self {
         Self {
-            base: FullBox::new(0, 0),
+            base: FullBox::new(1, 0),
             base_media_decode_time: 0,
         }
     }
@@ -501,7 +501,7 @@ impl IO for tfdt {
     fn as_bytes(&mut self) -> BytesMut {
         let mut w = BytesMut::new();
 
-        self.base.version = if (u32::MAX as u64) < self.base_media_decode_time { 1 } else { 0 };
+        //self.base.version = if (u32::MAX as u64) < self.base_media_decode_time { 1 } else { 0 };
 
         w.put(self.base.as_bytes());
 
