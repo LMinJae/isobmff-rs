@@ -23,10 +23,13 @@ fn parse(mut buf: BytesMut) {
     let mut moov = isobmff::moov::moov::default();
     let mut moof = isobmff::moof::moof::default();
 
+    let mut offset = 0;
+
     while 0 < buf.len() {
         let mut b = isobmff::Object::parse(&mut buf);
 
-        eprintln!("0x{:08x?}: {:?}", b.box_type, std::str::from_utf8(&b.box_type.to_be_bytes()).unwrap_or(""));
+        eprintln!("[0x{:08x?}] 0x{:08x?}: {:?}", offset, b.box_type, std::str::from_utf8(&b.box_type.to_be_bytes()).unwrap_or(""));
+        offset += 8 + b.payload.len();
         match b.box_type {
             // ftyp: File Type
             isobmff::ftyp::ftyp::BOX_TYPE => {
