@@ -160,7 +160,7 @@ impl IO for mfhd {
 #[derive(PartialEq)]
 pub struct traf {
     pub tfhd: tfhd,
-    pub tfdt: tfdt,
+    pub tfdt: Option<tfdt>,
     pub truns: Vec<trun>,
 }
 
@@ -172,7 +172,7 @@ impl Default for traf {
     fn default() -> Self {
         Self {
             tfhd: Default::default(),
-            tfdt: Default::default(),
+            tfdt: None,
             truns: vec![],
         }
     }
@@ -199,6 +199,10 @@ impl IO for traf {
     fn len(&self) -> usize {
         let mut v = 8 + self.tfhd.len();
 
+        if let Some(tfdt) = &self.tfdt {
+            v += 8 + tfdt.len();
+        }
+
         for it in &self.truns {
             v += 8 + it.len();
         }
@@ -219,7 +223,7 @@ impl IO for traf {
                 }
                 // tfdt: Track Fragment decode time
                 tfdt::BOX_TYPE => {
-                    rst.tfdt = tfdt::parse(&mut b.payload);
+                    rst.tfdt = Some(tfdt::parse(&mut b.payload));
                 }
                 // trun: Track Fragment Run
                 trun::BOX_TYPE => {
@@ -239,6 +243,13 @@ impl IO for traf {
             box_type: tfhd::BOX_TYPE,
             payload: self.tfhd.as_bytes(),
         }.as_bytes());
+
+        if let Some(mut tfdt) = self.tfdt.clone() {
+            w.put(Object {
+                box_type: tfdt::BOX_TYPE,
+                payload: tfdt.as_bytes(),
+            }.as_bytes());
+        }
 
         if let Some(trun) = self.truns.first_mut() {
             trun.base.flags = trun_flags::FIRST_SAMPLE_FLAGS_PRESENT;
@@ -429,7 +440,7 @@ impl IO for tfhd {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub struct tfdt {
     base: FullBox,
     pub base_media_decode_time: u64,
@@ -468,7 +479,7 @@ impl Debug for tfdt {
 
 impl IO for tfdt {
     fn len(&self) -> usize {
-        self.base.len() + if 1 == base.version { 8 } else { 4 }
+        self.base.len() + if 1 == self.base.version { 8 } else { 4 }
     }
 
     fn parse(r: &mut BytesMut) -> Self {
@@ -741,7 +752,7 @@ impl IO for trun {
 #[cfg(test)]
 mod tests {
     use crate::{IO, Object};
-    use crate::moof::{mfhd, moof, traf, trun};
+    use crate::moof::{mfhd, moof, tfdt, traf, trun};
 
     #[test]
     fn chk_moof() {
@@ -762,7 +773,13 @@ mod tests {
                     v.tfhd.default_sample_size = Some(3815);
                     v.tfhd.default_sample_flags = Some(0);
 
-                    v.tfdt.base_media_decode_time = 60000;
+                    v.tfdt = Some({
+                        let mut v = tfdt::default();
+
+                        v.base_media_decode_time = 60000;
+
+                        v
+                    });
 
                     v.truns.push({
                         let mut v = trun::default();
