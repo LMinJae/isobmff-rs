@@ -11,7 +11,15 @@ pub struct Object {
 
 impl IO for Object {
     fn len(&self) -> usize {
-        4 + self.payload.len()
+        let size = self.payload.len();
+
+        let mut v = 8 + size;
+
+        if (u32::MAX as usize) < size {
+            v += 8;
+        }
+
+        v
     }
 
     fn parse(r: &mut BytesMut) -> Self {

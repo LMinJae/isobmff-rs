@@ -26,10 +26,16 @@ fn parse(mut buf: BytesMut) {
     let mut offset = 0;
 
     while 0 < buf.len() {
+        let cur_offset = offset;
+        let tmp = buf[0];
+
         let mut b = isobmff::Object::parse(&mut buf);
 
-        eprintln!("[0x{:08x?}] 0x{:08x?}: {:?}", offset, b.box_type, std::str::from_utf8(&b.box_type.to_be_bytes()).unwrap_or(""));
+        eprintln!("[0x{:08x?}] 0x{:08x?}: {:?}", cur_offset, b.box_type, std::str::from_utf8(&b.box_type.to_be_bytes()).unwrap_or(""));
         offset += 8 + b.payload.len();
+        if 0 == tmp {
+            offset += 8;
+        }
         match b.box_type {
             // ftyp: File Type
             isobmff::ftyp::ftyp::BOX_TYPE => {
@@ -53,6 +59,7 @@ fn parse(mut buf: BytesMut) {
             }
             // moof: Movie Fragment
             isobmff::moof::moof::BOX_TYPE => {
+                moof_base_offset = cur_offset;
                 moof = isobmff::moof::parse(&mut b.payload);
                 eprintln!("{:?}", moof);
             }
