@@ -4,9 +4,6 @@ use std::fmt::{Debug, Formatter};
 use bytes::{Buf, BufMut, BytesMut};
 
 use crate::{FullBox, IO, Object};
-pub use crate::moov::avc::avcC;
-
-mod avc;
 
 pub fn parse(r: &mut BytesMut) -> moov {
     moov::parse(r)
@@ -1771,7 +1768,7 @@ pub enum SampleEntry {
     avc1 {
         base: std::boxed::Box<SampleEntry>,
 
-        avcC: avcC,
+        ext: BytesMut,
     },
 }
 
@@ -1819,11 +1816,9 @@ impl Debug for SampleEntry {
             }
             SampleEntry::avc1 {
                 base,
-                avcC,
+                ..
             } => {
                 base.fmt(f)?;
-
-                f.write_fmt(format_args!("\n\t\t\t\t\t\t\t\tavcC:\n{:?}", avcC))?;
             }
         }
 
@@ -1837,7 +1832,7 @@ impl IO for SampleEntry {
             SampleEntry::Visual { base, .. } => { base.len() + 70 }
             SampleEntry::Base { .. } => { 16 }
             SampleEntry::Audio { base, .. } => { base.len() + 20 }
-            SampleEntry::avc1 { base, avcC } => { base.len() + 8 + avcC.len() }
+            SampleEntry::avc1 { base, ext } => { base.len() + ext.len() }
         }
     }
 
@@ -1889,22 +1884,10 @@ impl IO for SampleEntry {
                     depth,
                 };
 
-                while 0 < b.payload.len() {
-                    let mut b = Object::parse(&mut b.payload);
-
-                    match b.box_type {
-                        // avcC
-                        0x61766343 => {
-                            return SampleEntry::avc1 {
-                                base: std::boxed::Box::new(vide),
-                                avcC: avcC::parse(&mut b.payload),
-                            };
-                        }
-                        _ => {}
-                    }
+                SampleEntry::avc1 {
+                    base: std::boxed::Box::new(vide),
+                    ext: b.payload.split_to(b.payload.len()),
                 }
-
-                vide
             }
             // mp4a
             0x6d703461 => {
@@ -1983,14 +1966,11 @@ impl IO for SampleEntry {
             }
             SampleEntry::avc1 {
                 base,
-                avcC,
+                ext,
             } => {
                 w.put(base.as_bytes());
 
-                w.put(Object {
-                    box_type: 0x61766343,
-                    payload: avcC.as_bytes(),
-                }.as_bytes());
+                w.put(ext);
             }
         }
 
@@ -2484,7 +2464,6 @@ mod tests {
 
     use crate::{IO, Object};
     use crate::moov::{dinf, hdlr, mdhd, mdia, MediaInformationHeader, minf, moov, mvex, mvhd, SampleEntry, smhd, stbl, stsd, tkhd, trak, trex, vmhd};
-    use crate::moov::avc::avcC;
 
     #[test]
     fn chk_moov() {
@@ -2540,26 +2519,7 @@ mod tests {
                                             compressor_name: "".to_owned(),
                                             depth: 24,
                                         }),
-                                        avcC: avcC {
-                                            configuration_version: 1,
-                                            profile_indication: 77,
-                                            profile_compatibility: 64,
-                                            level_indication: 21,
-                                            length_size_minus_one: 3,
-                                            sps: vec![{
-                                                let mut rst = BytesMut::new();
-                                                rst.put(&b"'M@\x15\xa9\x182\x13\xfd\xe0\rA\x80A\xad\xb0\xad{\xdf\x01"[..]);
-                                                rst
-                                            }],
-                                            pps: vec![
-                                                {
-                                                    let mut rst = BytesMut::new();
-                                                    rst.put(&b"(\xde\t\x88"[..]);
-                                                    rst
-                                                }
-                                            ],
-                                            ext: Default::default()
-                                        },
+                                        ext: Default::default(),
                                     });
 
                                     v
