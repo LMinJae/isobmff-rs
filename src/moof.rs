@@ -94,6 +94,13 @@ pub struct mfhd {
 
 impl mfhd {
     pub const BOX_TYPE: u32 = 0x6d666864;
+
+    pub fn new(sequence_number: u32) -> Self {
+        Self {
+            base: FullBox::new(0, 0),
+            sequence_number,
+        }
+    }
 }
 
 impl Default for mfhd {
@@ -186,7 +193,7 @@ impl IO for traf {
                 tfhd::BOX_TYPE => {
                     rst.tfhd = tfhd::parse(&mut b.payload);
                 }
-                // tfdt: Track Fragment Header
+                // tfdt: Track Fragment decode time
                 tfdt::BOX_TYPE => {
                     rst.tfdt = tfdt::parse(&mut b.payload);
                 }
@@ -519,7 +526,11 @@ impl Debug for trun {
                 f.write_fmt(format_args!("\n\t\t\t\t\tsample_flags: 0x{:06x?}", n))?;
             }
             if let Some(n) = sample_composition_time_offset {
-                f.write_fmt(format_args!("\n\t\t\t\t\tsample_composition_time_offset: {:?}", n))?;
+                if 1 == self.base.version && (0 != (0x80000000 & n)) {
+                    f.write_fmt(format_args!("\n\t\t\t\t\tsample_composition_time_offset: {:?}", -((0x7fffffff & n) as i32)))?;
+                } else {
+                    f.write_fmt(format_args!("\n\t\t\t\t\tsample_composition_time_offset: {:?}", n))?;
+                }
             }
             f.write_fmt(format_args!("\n\t\t\t\t}}"))?;
         }
@@ -620,17 +631,25 @@ impl IO for trun {
             sample_flags,
             sample_composition_time_offset,
         ) in &self.samples {
-            if let Some(n) = sample_duration {
-                w.put_u32(*n);
+            if 0 != self.base.flags & trun_flags::SAMPLE_DURATION_PRESENT {
+                w.put_u32(if let Some(n) = sample_duration {
+                    *n
+                } else { 0 });
             }
-            if let Some(n) = sample_size {
-                w.put_u32(*n);
+            if 0 != self.base.flags & trun_flags::SAMPLE_SIZE_PRESENT {
+                w.put_u32(if let Some(n) = sample_size {
+                    *n
+                } else { 0 });
             }
-            if let Some(n) = sample_flags {
-                w.put_u32(*n);
+            if 0 != self.base.flags & trun_flags::SAMPLE_FLAGS_PRESENT {
+                w.put_u32(if let Some(n) = sample_flags {
+                    *n
+                } else { 0 });
             }
-            if let Some(n) = sample_composition_time_offset {
-                w.put_u32(*n);
+            if 0 != self.base.flags & trun_flags::SAMPLE_COMPOSITION_TIME_OFFSETS_PRESENT {
+                w.put_u32(if let Some(n) = sample_composition_time_offset {
+                    *n
+                } else { 0 });
             }
         }
 

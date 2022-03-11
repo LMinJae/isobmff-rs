@@ -90,6 +90,10 @@ impl IO for moov {
                 payload: it.as_bytes(),
             }.as_bytes());
         }
+        w.put(Object {
+            box_type: mvex::BOX_TYPE,
+            payload: self.mvex.as_bytes(),
+        }.as_bytes());
 
         w
     }
@@ -98,6 +102,8 @@ impl IO for moov {
 #[allow(non_camel_case_types)]
 #[derive(PartialEq)]
 pub struct mvhd {
+    base: FullBox,
+
     pub creation_time: u64,
     pub modification_time: u64,
     pub timescale: u32,
@@ -136,6 +142,7 @@ impl Default for mvhd {
     //! }
     fn default() -> Self {
         Self {
+            base: FullBox::new(0, 0),
             creation_time: 0,
             modification_time: 0,
             timescale: 0,
@@ -172,18 +179,16 @@ impl Debug for mvhd {
 
 impl IO for mvhd {
     fn parse(r: &mut BytesMut) -> Self {
-        let version = r.get_u8();
-        let _flags = r.split_to(3);
-
         let mut rst = Self::default();
 
+        rst.base = FullBox::parse(r);
         {
             let (
                 creation_time,
                 modification_time,
                 timescale,
                 duration,
-            ) = if 1 == version {
+            ) = if 1 == rst.base.version {
                 (
                     r.get_u64(),
                     r.get_u64(),
@@ -223,14 +228,16 @@ impl IO for mvhd {
         if (u32::MAX as u64) < self.creation_time ||
             (u32::MAX as u64) < self.modification_time ||
             (u32::MAX as u64) < self.duration {
-            w.put_u32(0x01000000);
+            self.base.version = 1;
+            w.put(self.base.as_bytes());
 
             w.put_u64(self.creation_time);
             w.put_u64(self.modification_time);
             w.put_u32(self.timescale);
             w.put_u64(self.duration);
         } else {
-            w.put_u32(0);
+            self.base.version = 0;
+            w.put(self.base.as_bytes());
 
             w.put_u32(self.creation_time as u32);
             w.put_u32(self.modification_time as u32);
@@ -744,19 +751,21 @@ pub struct hdlr {
 impl hdlr {
     pub const BOX_TYPE: u32 = 0x68646c72;
 
-    pub fn vide() -> Self {
+    pub fn vide(name: &str) -> Self {
         let mut v = Self::default();
 
         v.handler_type = 0x76696465;
-        v.name = "VideoHandler\u{0}".to_owned();
+        v.name = name.to_owned();
+        v.name.push('\0');
 
         v
     }
-    pub fn soun() -> Self {
+    pub fn soun(name: &str) -> Self {
         let mut v = Self::default();
 
         v.handler_type = 0x736f756e;
-        v.name = "SoundHandler\u{0}".to_owned();
+        v.name = name.to_owned();
+        v.name.push('\0');
 
         v
     }
@@ -2175,7 +2184,7 @@ impl IO for stco {
 #[allow(non_camel_case_types)]
 #[derive(PartialEq)]
 pub struct mvex {
-    trexs: Vec<trex>,
+    pub trexs: Vec<trex>,
 }
 
 impl mvex {
@@ -2238,11 +2247,11 @@ impl IO for mvex {
 pub struct trex {
     base: FullBox,
 
-    track_id: u32,
-    default_sample_description_index: u32,
-    default_sample_duration: u32,
-    default_sample_size: u32,
-    default_sample_flags: u32,
+    pub track_id: u32,
+    pub default_sample_description_index: u32,
+    pub default_sample_duration: u32,
+    pub default_sample_size: u32,
+    pub default_sample_flags: u32,
 }
 
 impl Default for trex {
@@ -2340,7 +2349,7 @@ mod tests {
 
                             v
                         },
-                        hdlr: hdlr::vide(),
+                        hdlr: hdlr::vide("VideoHandler"),
                         minf: minf {
                             mhd: MediaInformationHeader::vmhd(vmhd::new(0, 0, 0, 0)),
                             dinf: dinf::default(),
@@ -2412,7 +2421,7 @@ mod tests {
 
                             v
                         },
-                        hdlr: hdlr::soun(),
+                        hdlr: hdlr::soun("SoundHandler"),
                         minf: minf {
                             mhd: MediaInformationHeader::smhd(smhd::default()),
                             dinf: dinf::default(),
