@@ -999,25 +999,25 @@ impl IO for minf {
             MediaInformationHeader::Unknown => {}
             MediaInformationHeader::vmhd(mut v) => {
                 w.put(Object {
-                    box_type: 0x766d6864,
+                    box_type: vmhd::BOX_TYPE,
                     payload: v.as_bytes(),
                 }.as_bytes());
             }
             MediaInformationHeader::smhd(mut v) => {
                 w.put(Object {
-                    box_type: 0x736d6864,
+                    box_type: smhd::BOX_TYPE,
                     payload: v.as_bytes(),
                 }.as_bytes());
             }
             MediaInformationHeader::hmhd(mut v) => {
                 w.put(Object {
-                    box_type: 0x686d6864,
+                    box_type: hmhd::BOX_TYPE,
                     payload: v.as_bytes(),
                 }.as_bytes());
             }
             MediaInformationHeader::nmhd(mut v) => {
                 w.put(Object {
-                    box_type: 0x6e6d6864,
+                    box_type: nmhd::BOX_TYPE,
                     payload: v.as_bytes(),
                 }.as_bytes());
             }
