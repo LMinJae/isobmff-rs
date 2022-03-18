@@ -1162,7 +1162,7 @@ impl smhd {
 
     pub fn new(balance: i16) -> Self {
         Self {
-            base: FullBox::new(0, 1),
+            base: FullBox::new(0, 0),
             balance,
         }
     }
