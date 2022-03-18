@@ -417,7 +417,7 @@ impl Default for tkhd {
             duration: 0,
             layer: 0,
             alternate_group: 0,
-            volume: 0,
+            volume: 0x0100,
             matrix: [0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000],
             width: 0,
             height: 0,
