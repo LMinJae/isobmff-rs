@@ -6,4 +6,3 @@ mod object;
 pub mod ftyp;
 pub mod moov;
 pub mod moof;
-
