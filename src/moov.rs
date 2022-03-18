@@ -85,7 +85,9 @@ impl IO for moov {
     fn as_bytes(&mut self) -> BytesMut {
         let mut w = BytesMut::new();
 
-        self.mvhd.next_track_id = 1 + self.traks.len() as u32;
+        if self.mvhd.next_track_id < self.traks.len() as u32 {
+            self.mvhd.next_track_id = self.traks.len() as u32;
+        }
 
         w.put(Object {
             box_type: mvhd::BOX_TYPE,
