@@ -694,6 +694,9 @@ impl IO for trun {
         if let Some(_) = self.data_offset {
             self.base.flags |= trun_flags::DATA_OFFSET_PRESENT;
         }
+        if let Some(_) = self.first_sample_flags {
+            self.base.flags |= trun_flags::FIRST_SAMPLE_FLAGS_PRESENT;
+        }
         if let Some((
                         sample_duration,
                         sample_size,
