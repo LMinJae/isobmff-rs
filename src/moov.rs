@@ -1777,6 +1777,13 @@ pub enum SampleEntry {
 
         ext: BytesMut,
     },
+    #[allow(non_camel_case_types)]
+    #[allow(non_snake_case)]
+    mp4a {
+        base: std::boxed::Box<SampleEntry>,
+
+        ext: BytesMut,
+    },
 }
 
 impl Debug for SampleEntry {
@@ -1827,6 +1834,12 @@ impl Debug for SampleEntry {
             } => {
                 base.fmt(f)?;
             }
+            SampleEntry::mp4a {
+                base,
+                ..
+            } => {
+                base.fmt(f)?;
+            }
         }
 
         Ok(())
@@ -1840,6 +1853,7 @@ impl IO for SampleEntry {
             SampleEntry::Base { .. } => { 16 }
             SampleEntry::Audio { base, .. } => { base.len() + 20 }
             SampleEntry::avc1 { base, ext } => { base.len() + ext.len() }
+            SampleEntry::mp4a { base, ext } => { base.len() + ext.len() }
         }
     }
 
@@ -1904,11 +1918,17 @@ impl IO for SampleEntry {
                 let sample_size = b.payload.get_u16();
                 let _ = b.payload.get_u32();
                 let sample_rate = b.payload.get_u32();
-                SampleEntry::Audio {
+
+                let soun = SampleEntry::Audio {
                     base: std::boxed::Box::new(base),
                     channel_count,
                     sample_size,
                     sample_rate,
+                };
+
+                SampleEntry::mp4a {
+                    base: std::boxed::Box::new(soun),
+                    ext: b.payload.split_to(b.payload.len()),
                 }
             }
             _ => {
@@ -1979,6 +1999,14 @@ impl IO for SampleEntry {
 
                 w.put(ext);
             }
+            SampleEntry::mp4a {
+                base,
+                ext,
+            } => {
+                w.put(base.as_bytes());
+
+                w.put(ext);
+            }
         }
 
         w
@@ -1998,6 +2026,9 @@ impl SampleEntry {
                 base.get_handler_type()
             }
             SampleEntry::avc1 { base, .. } => {
+                base.get_handler_type()
+            }
+            SampleEntry::mp4a { base, .. } => {
                 base.get_handler_type()
             }
         }
