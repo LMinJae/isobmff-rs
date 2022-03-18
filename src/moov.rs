@@ -1159,6 +1159,13 @@ pub struct smhd {
 
 impl smhd {
     pub const BOX_TYPE: u32 = 0x736d6864;
+
+    pub fn new(balance: i16) -> Self {
+        Self {
+            base: FullBox::new(0, 1),
+            balance,
+        }
+    }
 }
 
 impl Default for smhd {
