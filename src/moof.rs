@@ -348,19 +348,19 @@ impl IO for tfhd {
     fn len(&self) -> usize {
         let mut v = self.base.len() + 4;
 
-        if 0 != self.base.flags & tfhd_flags::BASE_DATA_OFFSET_PRESENT {
+        if let Some(_) = self.base_data_offset {
             v += 4;
         }
-        if 0 != (self.base.flags & tfhd_flags::SAMPLE_DESCRIPTION_INDEX_PRESENT) {
+        if let Some(_) = self.sample_description_index {
             v += 4;
         }
-        if 0 != (self.base.flags & tfhd_flags::DEFAULT_SAMPLE_DURATION_PRESENT) {
+        if let Some(_) = self.default_sample_duration {
             v += 4;
         }
-        if 0 != (self.base.flags & tfhd_flags::DEFAULT_SAMPLE_SIZE_PRESENT) {
+        if let Some(_) = self.default_sample_size {
             v += 4;
         }
-        if 0 != (self.base.flags & tfhd_flags::DEFAULT_SAMPLE_FLAG_PRESENT) {
+        if let Some(_) = self.default_sample_flags {
             v += 4;
         }
 
@@ -607,26 +607,33 @@ impl IO for trun {
     fn len(&self) -> usize {
         let mut v = self.base.len() + 4;
 
-        if 0 != (self.base.flags & trun_flags::DATA_OFFSET_PRESENT) {
+        if let Some(_) = self.data_offset {
             v += 4;
         }
-        if 0 != (self.base.flags & trun_flags::FIRST_SAMPLE_FLAGS_PRESENT) {
+        if let Some(_) = self.first_sample_flags {
             v += 4;
         }
         v += self.samples.len() * {
             let mut v = 0;
 
-            if 0 != (self.base.flags & trun_flags::SAMPLE_DURATION_PRESENT) {
-                v += 4;
-            }
-            if 0 != (self.base.flags & trun_flags::SAMPLE_SIZE_PRESENT) {
-                v += 4;
-            }
-            if 0 != (self.base.flags & trun_flags::SAMPLE_FLAGS_PRESENT) {
-                v += 4;
-            }
-            if 0 != (self.base.flags & trun_flags::SAMPLE_COMPOSITION_TIME_OFFSETS_PRESENT) {
-                v += 4;
+            if let Some((
+                sample_duration,
+                sample_size,
+                sample_flags,
+                sample_composition_time_offset,
+            )) = self.samples.first() {
+                if let Some(_) = *sample_duration {
+                    v += 4;
+                }
+                if let Some(_) = *sample_size {
+                    v += 4;
+                }
+                if let Some(_) = *sample_flags {
+                    v += 4;
+                }
+                if let Some(_) = *sample_composition_time_offset {
+                    v += 4;
+                }
             }
 
             v
