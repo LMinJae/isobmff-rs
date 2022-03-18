@@ -412,7 +412,7 @@ impl Default for tkhd {
     //! }
     fn default() -> Self {
         Self {
-            base: FullBox { version: 0, flags: tkhd_flags::TRACK_ENABLED | tkhd_flags::TRACK_IN_MOVIE | tkhd_flags::TRACK_IN_PREVIEW },
+            base: FullBox { version: 0, flags: tkhd_flags::TRACK_ENABLED | tkhd_flags::TRACK_IN_MOVIE },
             creation_time: 0,
             modification_time: 0,
             track_id: 0,

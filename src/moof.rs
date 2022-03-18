@@ -400,7 +400,7 @@ impl IO for tfhd {
     fn as_bytes(&mut self) -> BytesMut {
         let mut w = BytesMut::new();
 
-        self.base.flags &= tfhd_flags::DEFAULT_BASE_IS_MOOF;    // Keeping base is moof
+        self.base.flags &= 0;
         if let Some(_) = self.base_data_offset {
             self.base.flags |= tfhd_flags::BASE_DATA_OFFSET_PRESENT;
         }
@@ -465,7 +465,7 @@ impl tfdt {
 impl Default for tfdt {
     fn default() -> Self {
         Self {
-            base: FullBox::new(1, 0),
+            base: FullBox::new(0, 0),
             base_media_decode_time: 0,
         }
     }
