@@ -286,6 +286,7 @@ impl IO for mvhd {
 #[derive(PartialEq)]
 pub struct trak {
     pub tkhd: tkhd,
+    pub edts: Option<edts>,
     pub mdia: mdia,
 }
 
@@ -297,6 +298,7 @@ impl Default for trak {
     fn default() -> Self {
         Self {
             tkhd: Default::default(),
+            edts: None,
             mdia: Default::default(),
         }
     }
@@ -306,6 +308,10 @@ impl Debug for trak {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("\t\t0x{:08x?}: \"tkhd\"\n", tkhd::BOX_TYPE))?;
         self.tkhd.fmt(f)?;
+        if let Some(edts) = &self.edts {
+            f.write_fmt(format_args!("\n\t\t0x{:08x?}: \"edts\"\n", edts::BOX_TYPE))?;
+            edts.fmt(f)?;
+        }
         f.write_fmt(format_args!("\n\t\t0x{:08x?}: \"mdia\"\n", mdia::BOX_TYPE))?;
         self.mdia.fmt(f)?;
 
@@ -315,7 +321,7 @@ impl Debug for trak {
 
 impl IO for trak {
     fn len(&self) -> usize {
-        16 + self.tkhd.len() + self.mdia.len()
+        16 + self.tkhd.len() + self.mdia.len() + if let Some(edts) = &self.edts { 8 + edts.len() } else { 0 }
     }
 
     fn parse(r: &mut BytesMut) -> Self {
@@ -333,6 +339,10 @@ impl IO for trak {
                 mdia::BOX_TYPE => {
                     rst.mdia = mdia::parse(&mut b.payload);
                 }
+                // edts: Edit Box
+                edts::BOX_TYPE => {
+                    rst.edts = Some(edts::parse(&mut b.payload));
+                }
                 _ => {}
             }
         }
@@ -347,6 +357,14 @@ impl IO for trak {
             box_type: tkhd::BOX_TYPE,
             payload: self.tkhd.as_bytes(),
         }.as_bytes());
+
+        if let Some(mut edts) = self.edts.clone() {
+            w.put(Object {
+                box_type: edts::BOX_TYPE,
+                payload: edts.as_bytes(),
+            }.as_bytes());
+        }
+
         w.put(Object {
             box_type: mdia::BOX_TYPE,
             payload: self.mdia.as_bytes(),
@@ -547,6 +565,155 @@ impl IO for tkhd {
         }
         w.put_u32(self.width);
         w.put_u32(self.height);
+
+        w
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[derive(PartialEq, Clone)]
+pub struct edts {
+    pub elst: Option<elst>,
+}
+
+impl edts {
+    pub const BOX_TYPE: u32 = 0x65647473;
+}
+
+impl Default for edts {
+    fn default() -> Self {
+        Self {
+            elst: None,
+        }
+    }
+}
+
+impl Debug for edts {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if let Some(elst) = &self.elst {
+            f.write_fmt(format_args!("\t\t\t0x{:08x?}: \"elst\"\n", elst::BOX_TYPE))?;
+            elst.fmt(f)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl IO for edts {
+    fn len(&self) -> usize {
+        if let Some(elst) = &self.elst { 8 + elst.len() } else { 0 }
+    }
+
+    fn parse(r: &mut BytesMut) -> Self {
+        let mut rst = Self::default();
+
+        while 0 < r.len() {
+            let mut b = Object::parse(r);
+
+            match b.box_type {
+                // elst: Edit List Box
+                elst::BOX_TYPE => {
+                    rst.elst = Some(elst::parse(&mut b.payload));
+                }
+                _ => {}
+            }
+        }
+
+        rst
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        if let Some(mut elst) = self.elst.clone() {
+            w.put(Object {
+                box_type: elst::BOX_TYPE,
+                payload: elst.as_bytes(),
+            }.as_bytes());
+        }
+
+        w
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[derive(PartialEq, Clone)]
+pub struct elst {
+    base: FullBox,
+    entries: Vec<(u64, i64, i16)>,
+}
+
+impl elst {
+    pub const BOX_TYPE: u32 = 0x656C7374;
+}
+
+impl Default for elst {
+    fn default() -> Self {
+        Self {
+            base: FullBox::new(0, 0),
+            entries: vec![],
+        }
+    }
+}
+
+impl Debug for elst {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("\t\t\t\tentry_count: {:?}", self.entries.len()))?;
+        for (segment_duration, media_time, media_rate_integer) in &self.entries {
+            f.write_fmt(format_args!("\n\t\t\t\t\t({:?}, {:?}, {:?})", segment_duration, media_time, media_rate_integer))?;
+        }
+
+        Ok(())
+    }
+}
+
+impl IO for elst {
+    fn len(&self) -> usize {
+        self.base.len() + 4 + self.entries.len() * (12 + 8 * self.base.version as usize)
+    }
+
+    fn parse(r: &mut BytesMut) -> Self {
+        let mut rst = Self {
+            base: FullBox::parse(r),
+            entries: Vec::with_capacity(r.get_u32() as usize),
+        };
+
+        for _ in 0..rst.entries.capacity() {
+            let (segment_duration, media_time) = if 1 == rst.base.version {
+                (r.get_u64(), r.get_i64())
+            } else {
+                (r.get_u32() as u64, r.get_i32() as i64)
+            };
+            let media_rate_integer = r.get_i16();
+            let _ = r.get_i16();
+
+            rst.entries.push((
+                segment_duration,
+                media_time,
+                media_rate_integer,
+            ))
+        }
+
+        rst
+    }
+
+    fn as_bytes(&mut self) -> BytesMut {
+        let mut w = BytesMut::new();
+
+        w.put(self.base.as_bytes());
+
+        w.put_u32(self.entries.len() as u32);
+        for (segment_duration, media_time, media_rate_integer) in &self.entries {
+            if 1 == self.base.version {
+                w.put_u64(*segment_duration);
+                w.put_i64(*media_time);
+            } else {
+                w.put_u32(*segment_duration as u32);
+                w.put_i32(*media_time as i32);
+            }
+            w.put_i16(*media_rate_integer);
+            w.put_i16(0);
+        }
 
         w
     }
@@ -2509,7 +2676,7 @@ impl trex {
 #[cfg(test)]
 mod tests {
     use crate::{IO, Object};
-    use crate::moov::{dinf, hdlr, mdhd, mdia, MediaInformationHeader, minf, moov, mvex, mvhd, SampleEntry, smhd, stbl, stsd, tkhd, trak, trex, vmhd};
+    use crate::moov::{dinf, edts, elst, hdlr, mdhd, mdia, MediaInformationHeader, minf, moov, mvex, mvhd, SampleEntry, smhd, stbl, stsd, tkhd, trak, trex, vmhd};
 
     #[test]
     fn chk_moov() {
@@ -2533,6 +2700,18 @@ mod tests {
 
                         v
                     },
+                    edts: Some(
+                        edts {
+                            elst: Some({
+                                let mut v = elst::default();
+                                
+                                v.entries.push((66, -1, 1));
+                                v.entries.push((0, 768, 1));
+                                
+                                v
+                            }),
+                        }
+                    ),
                     mdia: mdia {
                         mdhd: {
                             let mut v = mdhd::default();
@@ -2586,6 +2765,18 @@ mod tests {
 
                         v
                     },
+                    edts: Some(
+                        edts {
+                            elst: Some({
+                                let mut v = elst::default();
+        
+                                v.entries.push((20, -1, 1));
+                                v.entries.push((0, 0, 1));
+        
+                                v
+                            }),
+                        }
+                    ),
                     mdia: mdia {
                         mdhd: {
                             let mut v = mdhd::default();
