@@ -1,5 +1,17 @@
 #[allow(non_upper_case_globals)]
 pub mod types {
+    pub const isom: u32 = 0x69736F6D;
+    pub const avc1: u32 = 0x61766331;
+    pub const iso2: u32 = 0x69736F32;
+    pub const mp71: u32 = 0x6D703731;
+    pub const iso3: u32 = 0x69736F33;
+    pub const iso4: u32 = 0x69736F34;
+    pub const iso5: u32 = 0x69736F35;
+    pub const iso6: u32 = 0x69736F36;
+    pub const iso7: u32 = 0x69736F37;
+    pub const iso8: u32 = 0x69736F38;
+    pub const iso9: u32 = 0x69736F39;
+
     pub const ftyp: u32 = 0x66747970;
     pub const mdat: u32 = 0x6d646174;
     pub const moov: u32 = 0x6d6f6f76;
@@ -37,7 +49,6 @@ pub mod types {
     pub const stsd: u32 = 0x73747364;
     pub const btrt: u32 = 0x62747274;
     pub const mp4a: u32 = 0x6d703461;
-    pub const avc1: u32 = 0x61766331;
     pub const avcC: u32 = 0x61766343;
     pub const colr: u32 = 0x636F6C72;
     pub const esds: u32 = 0x65736473;
