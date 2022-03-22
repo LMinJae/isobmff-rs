@@ -326,11 +326,11 @@ impl IO for trak {
 
             match b.box_type {
                 // tkhd: Track Header
-                0x746b6864 => {
+                tkhd::BOX_TYPE => {
                     rst.tkhd = tkhd::parse(&mut b.payload);
                 }
                 // mdia: Meida
-                0x6d646961 => {
+                mdia::BOX_TYPE => {
                     rst.mdia = mdia::parse(&mut b.payload);
                 }
                 _ => {}
@@ -344,11 +344,11 @@ impl IO for trak {
         let mut w = BytesMut::new();
 
         w.put(Object {
-            box_type: 0x746b6864,
+            box_type: tkhd::BOX_TYPE,
             payload: self.tkhd.as_bytes(),
         }.as_bytes());
         w.put(Object {
-            box_type: 0x6d646961,
+            box_type: mdia::BOX_TYPE,
             payload: self.mdia.as_bytes(),
         }.as_bytes());
 
@@ -622,15 +622,15 @@ impl IO for mdia {
         let mut w = BytesMut::new();
 
         w.put(Object {
-            box_type: 0x6d646864,
+            box_type: mdhd::BOX_TYPE,
             payload: self.mdhd.as_bytes(),
         }.as_bytes());
         w.put(Object {
-            box_type: 0x68646c72,
+            box_type: hdlr::BOX_TYPE,
             payload: self.hdlr.as_bytes(),
         }.as_bytes());
         w.put(Object {
-            box_type: 0x6d696e66,
+            box_type: minf::BOX_TYPE,
             payload: self.minf.as_bytes(),
         }.as_bytes());
 
@@ -1026,11 +1026,11 @@ impl IO for minf {
         }
 
         w.put(Object {
-            box_type: 0x64696e66,
+            box_type: dinf::BOX_TYPE,
             payload: self.dinf.as_bytes(),
         }.as_bytes());
         w.put(Object {
-            box_type: 0x7374626c,
+            box_type: stbl::BOX_TYPE,
             payload: self.stbl.as_bytes(),
         }.as_bytes());
 
@@ -1376,7 +1376,7 @@ impl Debug for dinf {
         for it in &self.dref.entries {
             match it {
                 DataEntry::url_ { base, .. } => {
-                    f.write_fmt(format_args!("\n\t\t\t\t\t\t0x{:08x?}: \"url_\"", 0x75726c20))?;
+                    f.write_fmt(format_args!("\n\t\t\t\t\t\t0x{:08x?}: \"url_\"", url_::BOX_TYPE))?;
                     f.write_fmt(format_args!("\n\t\t\t\t\t\t\tflags: {:?}", base.flags))?;
                 }
             }
@@ -1440,7 +1440,7 @@ impl IO for DataEntry {
         let mut b = Object::parse(r);
         match b.box_type {
             // url : URL
-            0x75726c20 => {
+            url_::BOX_TYPE => {
                 let base = FullBox::parse(&mut b.payload);
 
                 DataEntry::url_ {
@@ -1460,7 +1460,7 @@ impl IO for DataEntry {
         w.put(match self {
             DataEntry::url_ { base, location } => {
                 Object {
-                    box_type: 0x75726c20,
+                    box_type: url_::BOX_TYPE,
                     payload: {
                         let mut w = BytesMut::new();
 
@@ -1476,6 +1476,14 @@ impl IO for DataEntry {
 
         w
     }
+}
+
+#[allow(non_camel_case_types)]
+struct url_ {
+}
+
+impl url_ {
+    pub const BOX_TYPE: u32 = 0x75726c20;
 }
 
 #[allow(non_camel_case_types)]
@@ -1632,23 +1640,23 @@ impl IO for stbl {
         let mut w = BytesMut::new();
 
         w.put(Object {
-            box_type: 0x73747364,
+            box_type: stsd::BOX_TYPE,
             payload: self.stsd.as_bytes(),
         }.as_bytes());
         w.put(Object {
-            box_type: 0x73747473,
+            box_type: stts::BOX_TYPE,
             payload: self.stts.as_bytes(),
         }.as_bytes());
         w.put(Object {
-            box_type: 0x73747363,
+            box_type: stsc::BOX_TYPE,
             payload: self.stsc.as_bytes(),
         }.as_bytes());
         w.put(Object {
-            box_type: 0x7374737a,
+            box_type: stsz::BOX_TYPE,
             payload: self.stsz.as_bytes(),
         }.as_bytes());
         w.put(Object {
-            box_type: 0x7374636f,
+            box_type: stco::BOX_TYPE,
             payload: self.stco.as_bytes(),
         }.as_bytes());
 
