@@ -2508,8 +2508,6 @@ impl trex {
 
 #[cfg(test)]
 mod tests {
-    use bytes::{BufMut, BytesMut};
-
     use crate::{IO, Object};
     use crate::moov::{dinf, hdlr, mdhd, mdia, MediaInformationHeader, minf, moov, mvex, mvhd, SampleEntry, smhd, stbl, stsd, tkhd, trak, trex, vmhd};
 
