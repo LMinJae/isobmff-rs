@@ -1,5 +1,6 @@
 #[allow(non_upper_case_globals)]
 pub mod types {
+    pub const mp41: u32 = 0x6D703431;
     pub const isom: u32 = 0x69736F6D;
     pub const avc1: u32 = 0x61766331;
     pub const iso2: u32 = 0x69736F32;
