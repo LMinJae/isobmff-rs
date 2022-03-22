@@ -436,14 +436,14 @@ impl Debug for tkhd {
         f.write_fmt(format_args!("\n\t\t\tlayer: {:?}", self.layer))?;
         f.write_fmt(format_args!("\n\t\t\talternate_group: {:?}", self.alternate_group))?;
         f.write_fmt(format_args!("\n\t\t\tvolume: {:?}", self.volume))?;
-        f.write_fmt(format_args!("\n\t\tmatrix: ["))?;
+        f.write_fmt(format_args!("\n\t\t\tmatrix: ["))?;
         for i in 0..9 {
             if 0 == i % 3 {
-                f.write_fmt(format_args!("\n\t\t\t"))?;
+                f.write_fmt(format_args!("\n\t\t\t\t"))?;
             }
             f.write_fmt(format_args!("0x{:08x?}, ", self.matrix[i]))?;
         }
-        f.write_fmt(format_args!("\n\t\t]"))?;
+        f.write_fmt(format_args!("\n\t\t\t]"))?;
         f.write_fmt(format_args!("\n\t\t\twidth: {:?}", self.width))?;
         f.write_fmt(format_args!("\n\t\t\theight: {:?}", self.height))?;
 
