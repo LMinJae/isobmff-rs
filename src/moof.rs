@@ -400,7 +400,7 @@ impl IO for tfhd {
     fn as_bytes(&mut self) -> BytesMut {
         let mut w = BytesMut::new();
 
-        self.base.flags &= 0;
+        self.base.flags &= tfhd_flags::DEFAULT_BASE_IS_MOOF;
         if let Some(_) = self.base_data_offset {
             self.base.flags |= tfhd_flags::BASE_DATA_OFFSET_PRESENT;
         }
