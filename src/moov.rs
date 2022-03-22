@@ -640,7 +640,7 @@ impl IO for edts {
 #[derive(PartialEq, Clone)]
 pub struct elst {
     base: FullBox,
-    entries: Vec<(u64, i64, i16)>,
+    pub entries: Vec<(u64, i64, i16)>,
 }
 
 impl elst {
