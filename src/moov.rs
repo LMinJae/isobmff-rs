@@ -4,6 +4,7 @@ use std::fmt::{Debug, Formatter};
 use bytes::{Buf, BufMut, BytesMut};
 
 use crate::{FullBox, IO, Object};
+use crate::types::types;
 
 pub fn parse(r: &mut BytesMut) -> moov {
     moov::parse(r)
@@ -18,7 +19,7 @@ pub struct moov {
 }
 
 impl moov {
-    pub const BOX_TYPE: u32 = 0x6d6f6f76;
+    pub const BOX_TYPE: u32 = types::moov;
 }
 
 impl Default for moov {
@@ -124,7 +125,7 @@ pub struct mvhd {
 }
 
 impl mvhd {
-    pub const BOX_TYPE: u32 = 0x6d766864;
+    pub const BOX_TYPE: u32 = types::mvhd;
 }
 
 impl Default for mvhd {
@@ -291,7 +292,7 @@ pub struct trak {
 }
 
 impl trak {
-    pub const BOX_TYPE: u32 = 0x7472616b;
+    pub const BOX_TYPE: u32 = types::trak;
 }
 
 impl Default for trak {
@@ -392,7 +393,7 @@ pub struct tkhd {
 }
 
 impl tkhd {
-    pub const BOX_TYPE: u32 = 0x746b6864;
+    pub const BOX_TYPE: u32 = types::tkhd;
 }
 
 #[allow(dead_code)]
@@ -577,7 +578,7 @@ pub struct edts {
 }
 
 impl edts {
-    pub const BOX_TYPE: u32 = 0x65647473;
+    pub const BOX_TYPE: u32 = types::edts;
 }
 
 impl Default for edts {
@@ -644,7 +645,7 @@ pub struct elst {
 }
 
 impl elst {
-    pub const BOX_TYPE: u32 = 0x656C7374;
+    pub const BOX_TYPE: u32 = types::elst;
 }
 
 impl Default for elst {
@@ -728,7 +729,7 @@ pub struct mdia {
 }
 
 impl mdia {
-    pub const BOX_TYPE: u32 = 0x6d646961;
+    pub const BOX_TYPE: u32 = types::mdia;
 }
 
 impl Default for mdia {
@@ -767,15 +768,15 @@ impl IO for mdia {
 
             match b.box_type {
                 // mdhd: Media Header
-                0x6d646864 => {
+                mdhd::BOX_TYPE => {
                     rst.mdhd = mdhd::parse(&mut b.payload);
                 }
                 // hdlr: Handler Reference
-                0x68646c72 => {
+                hdlr::BOX_TYPE => {
                     rst.hdlr = hdlr::parse(&mut b.payload);
                 }
                 // minf: Media Information
-                0x6d696e66 => {
+                minf::BOX_TYPE => {
                     rst.minf = minf::parse(&mut b.payload);
                 }
                 _ => {}
@@ -818,7 +819,7 @@ pub struct mdhd {
 }
 
 impl mdhd {
-    pub const BOX_TYPE: u32 = 0x6d646864;
+    pub const BOX_TYPE: u32 = types::mdhd;
 }
 
 impl Default for mdhd {
@@ -969,12 +970,12 @@ pub struct hdlr {
 }
 
 impl hdlr {
-    pub const BOX_TYPE: u32 = 0x68646c72;
+    pub const BOX_TYPE: u32 = types::hdlr;
 
     pub fn vide(name: &str) -> Self {
         let mut v = Self::default();
 
-        v.handler_type = 0x76696465;
+        v.handler_type = types::vide;
         v.name = name.to_owned();
         v.name.push('\0');
 
@@ -983,7 +984,7 @@ impl hdlr {
     pub fn soun(name: &str) -> Self {
         let mut v = Self::default();
 
-        v.handler_type = 0x736f756e;
+        v.handler_type = types::soun;
         v.name = name.to_owned();
         v.name.push('\0');
 
@@ -1065,7 +1066,7 @@ pub struct minf {
 }
 
 impl minf {
-    pub const BOX_TYPE: u32 = 0x6d696e66;
+    pub const BOX_TYPE: u32 = types::minf;
 }
 
 impl Default for minf {
@@ -1131,27 +1132,27 @@ impl IO for minf {
 
             match b.box_type {
                 // vmhd: Video Media Header
-                0x766d6864 => {
+                vmhd::BOX_TYPE => {
                     rst.mhd = MediaInformationHeader::vmhd(vmhd::parse(&mut b.payload));
                 }
                 // smhd: Sound Media Header
-                0x736d6864 => {
+                smhd::BOX_TYPE => {
                     rst.mhd = MediaInformationHeader::smhd(smhd::parse(&mut b.payload));
                 }
                 // hmhd: Hint Media Header
-                0x686d6864 => {
+                hmhd::BOX_TYPE => {
                     rst.mhd = MediaInformationHeader::hmhd(hmhd::parse(&mut b.payload));
                 }
                 // nmhd: Null Media Header
-                0x6e6d6864 => {
+                nmhd::BOX_TYPE => {
                     rst.mhd = MediaInformationHeader::nmhd(nmhd::parse(&mut b.payload));
                 }
                 // dinf: Data Information
-                0x64696e66 => {
+                dinf::BOX_TYPE => {
                     rst.dinf = dinf::parse(&mut b.payload);
                 }
                 // stbl: Sample Table
-                0x7374626c => {
+                stbl::BOX_TYPE => {
                     rst.stbl = stbl::parse(&mut b.payload);
                 }
                 _ => {}
@@ -1249,7 +1250,7 @@ pub struct vmhd {
 }
 
 impl vmhd {
-    pub const BOX_TYPE: u32 = 0x766d6864;
+    pub const BOX_TYPE: u32 = types::vmhd;
 }
 
 impl Default for vmhd {
@@ -1327,7 +1328,7 @@ pub struct smhd {
 }
 
 impl smhd {
-    pub const BOX_TYPE: u32 = 0x736d6864;
+    pub const BOX_TYPE: u32 = types::smhd;
 
     pub fn new(balance: i16) -> Self {
         Self {
@@ -1399,7 +1400,7 @@ pub struct hmhd {
 }
 
 impl hmhd {
-    pub const BOX_TYPE: u32 = 0x686d6864;
+    pub const BOX_TYPE: u32 = types::hmhd;
 }
 
 impl Default for hmhd {
@@ -1476,7 +1477,7 @@ pub struct nmhd {
 }
 
 impl nmhd {
-    pub const BOX_TYPE: u32 = 0x6e6d6864;
+    pub const BOX_TYPE: u32 = types::nmhd;
 }
 
 impl Default for nmhd {
@@ -1526,7 +1527,7 @@ pub struct dinf {
 }
 
 impl dinf {
-    pub const BOX_TYPE: u32 = 0x64696e66;
+    pub const BOX_TYPE: u32 = types::dinf;
 }
 
 impl Default for dinf {
@@ -1650,7 +1651,7 @@ struct url_ {
 }
 
 impl url_ {
-    pub const BOX_TYPE: u32 = 0x75726c20;
+    pub const BOX_TYPE: u32 = types::url_;
 }
 
 #[allow(non_camel_case_types)]
@@ -1662,7 +1663,7 @@ pub struct dref {
 }
 
 impl dref {
-    pub const BOX_TYPE: u32 = 0x64726566;
+    pub const BOX_TYPE: u32 = types::dref;
 }
 
 impl Default for dref {
@@ -1744,7 +1745,7 @@ impl Default for stbl {
 }
 
 impl stbl {
-    pub const BOX_TYPE: u32 = 0x7374626c;
+    pub const BOX_TYPE: u32 = types::stbl;
 }
 
 impl Debug for stbl {
@@ -1777,23 +1778,23 @@ impl IO for stbl {
 
             match b.box_type {
                 // stsd: Sample Description
-                0x73747364 => {
+                stsd::BOX_TYPE => {
                     rst.stsd = stsd::parse(&mut b.payload);
                 }
                 // stts: Decoding Time to Sample
-                0x73747473 => {
+                stts::BOX_TYPE => {
                     rst.stts = stts::parse(&mut b.payload);
                 }
                 // stsc: Sample To Chunk
-                0x73747363 => {
+                stsc::BOX_TYPE => {
                     rst.stsc = stsc::parse(&mut b.payload);
                 }
                 // stsz: Sample Size
-                0x7374737a => {
+                stsz::BOX_TYPE => {
                     rst.stsz = stsz::parse(&mut b.payload);
                 }
                 // stco: Chunk Offset
-                0x7374636f => {
+                stco::BOX_TYPE => {
                     rst.stco = stco::parse(&mut b.payload);
                 }
                 _ => {}
@@ -1840,7 +1841,7 @@ pub struct stsd {
 }
 
 impl stsd {
-    pub const BOX_TYPE: u32 = 0x73747364;
+    pub const BOX_TYPE: u32 = types::stsd;
 }
 
 impl Default for stsd {
@@ -2047,7 +2048,7 @@ impl IO for SampleEntry {
 
         match handler_type {
             // avc1
-            0x61766331 => {
+            types::avc1 => {
                 let _ = b.payload.get_u16();
                 let _ = b.payload.get_u16();
                 let _ = b.payload.split_to(12);
@@ -2088,7 +2089,7 @@ impl IO for SampleEntry {
                 }
             }
             // mp4a
-            0x6d703461 => {
+            types::mp4a => {
                 let _version = b.payload.get_u16();
                 let _ = b.payload.split_to(6);
                 let channel_count = b.payload.get_u16();
@@ -2221,7 +2222,7 @@ pub struct stts {
 }
 
 impl stts {
-    pub const BOX_TYPE: u32 = 0x73747473;
+    pub const BOX_TYPE: u32 = types::stts;
 }
 
 impl Default for stts {
@@ -2297,7 +2298,7 @@ pub struct stsc {
 }
 
 impl stsc {
-    pub const BOX_TYPE: u32 = 0x73747363;
+    pub const BOX_TYPE: u32 = types::stsc;
 }
 
 impl Default for stsc {
@@ -2376,7 +2377,7 @@ pub struct stsz {
 }
 
 impl stsz {
-    pub const BOX_TYPE: u32 = 0x7374737a;
+    pub const BOX_TYPE: u32 = types::stsz;
 }
 
 impl Default for stsz {
@@ -2465,7 +2466,7 @@ pub struct stco {
 }
 
 impl stco {
-    pub const BOX_TYPE: u32 = 0x7374636f;
+    pub const BOX_TYPE: u32 = types::stco;
 }
 
 impl Default for stco {
@@ -2536,7 +2537,7 @@ pub struct mvex {
 }
 
 impl mvex {
-    pub const BOX_TYPE: u32 = 0x6d766578;
+    pub const BOX_TYPE: u32 = types::mvex;
 }
 
 impl Default for mvex {
@@ -2670,7 +2671,7 @@ impl IO for trex {
 }
 
 impl trex {
-    pub const BOX_TYPE: u32 = 0x74726578;
+    pub const BOX_TYPE: u32 = types::trex;
 }
 
 #[cfg(test)]
@@ -2678,6 +2679,7 @@ mod tests {
     use bytes::BytesMut;
 
     use crate::{IO, Object};
+    use crate::types::types;
     use crate::moov::{dinf, edts, elst, hdlr, mdhd, mdia, MediaInformationHeader, minf, moov, mvex, mvhd, SampleEntry, smhd, stbl, stsd, tkhd, trak, trex, vmhd};
 
     #[test]
@@ -2735,7 +2737,7 @@ mod tests {
                                     v.entries.push(SampleEntry::avc1 {
                                         base: Box::new(SampleEntry::Visual {
                                             base: Box::new(SampleEntry::Base {
-                                                handler_type: 0x61766331,
+                                                handler_type: types::avc1,
                                                 data_reference_index: 1,
                                             }),
                                             width: 400,
@@ -2800,7 +2802,7 @@ mod tests {
                                     v.entries.push(SampleEntry::mp4a {
                                         base: Box::new(SampleEntry::Audio {
                                             base: Box::new(SampleEntry::Base {
-                                                handler_type: 0x6d703461,
+                                                handler_type: types::mp4a,
                                                 data_reference_index: 1,
                                             }),
                                             channel_count: 2,

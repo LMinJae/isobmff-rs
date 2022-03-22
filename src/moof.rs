@@ -3,6 +3,7 @@ use std::fmt::{Debug, Formatter};
 use bytes::{Buf, BufMut, BytesMut};
 
 use crate::{FullBox, IO, Object};
+use crate::types::types;
 
 pub fn parse(r: &mut BytesMut) -> moof {
     moof::parse(r)
@@ -16,7 +17,7 @@ pub struct moof {
 }
 
 impl moof {
-    pub const BOX_TYPE: u32 = 0x6d6f6f66;
+    pub const BOX_TYPE: u32 = types::moof;
 }
 
 impl Default for moof {
@@ -61,11 +62,11 @@ impl IO for moof {
 
             match b.box_type {
                 // mfhd: Movie Fragment Header
-                0x6d666864 => {
+                mfhd::BOX_TYPE => {
                     rst.mfhd = mfhd::parse(&mut b.payload);
                 }
                 // traf: Track Fragment
-                0x74726166 => {
+                traf::BOX_TYPE => {
                     rst.trafs.push(traf::parse(&mut b.payload));
                 }
                 _ => {}
@@ -103,7 +104,7 @@ pub struct mfhd {
 }
 
 impl mfhd {
-    pub const BOX_TYPE: u32 = 0x6d666864;
+    pub const BOX_TYPE: u32 = types::mfhd;
 
     pub fn new(sequence_number: u32) -> Self {
         Self {
@@ -165,7 +166,7 @@ pub struct traf {
 }
 
 impl traf {
-    pub const BOX_TYPE: u32 = 0x74726166;
+    pub const BOX_TYPE: u32 = types::traf;
 }
 
 impl Default for traf {
@@ -281,7 +282,7 @@ pub struct tfhd {
 }
 
 impl tfhd {
-    pub const BOX_TYPE: u32 = 0x74666864;
+    pub const BOX_TYPE: u32 = types::tfhd;
 }
 
 #[allow(dead_code)]
@@ -449,7 +450,7 @@ pub struct tfdt {
 }
 
 impl tfdt {
-    pub const BOX_TYPE: u32 = 0x74666474;
+    pub const BOX_TYPE: u32 = types::tfdt;
 
     pub fn new(base_media_decode_time: u64) -> Self {
         Self {
@@ -525,7 +526,7 @@ pub struct trun {
 }
 
 impl trun {
-    pub const BOX_TYPE: u32 = 0x7472756e;
+    pub const BOX_TYPE: u32 = types::trun;
 }
 
 mod trun_flags {

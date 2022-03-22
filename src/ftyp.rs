@@ -1,6 +1,7 @@
 use std::fmt::{Debug, Formatter};
 
 use bytes::{Buf, BufMut, BytesMut};
+use crate::types::types;
 
 use crate::IO;
 
@@ -17,7 +18,7 @@ pub struct ftyp {
 }
 
 impl ftyp {
-    pub const BOX_TYPE: u32 = 0x66747970;
+    pub const BOX_TYPE: u32 = types::ftyp;
 }
 
 impl Debug for ftyp {

@@ -1,0 +1,44 @@
+#[allow(non_upper_case_globals)]
+pub mod types {
+    pub const ftyp: u32 = 0x66747970;
+    pub const mdat: u32 = 0x6d646174;
+    pub const moov: u32 = 0x6d6f6f76;
+    pub const mvhd: u32 = 0x6d766864;
+    pub const trak: u32 = 0x7472616b;
+    pub const tkhd: u32 = 0x746b6864;
+    pub const mdia: u32 = 0x6d646961;
+    pub const mdhd: u32 = 0x6d646864;
+    pub const hdlr: u32 = 0x68646c72;
+    pub const vide: u32 = 0x76696465;
+    pub const soun: u32 = 0x736f756e;
+    pub const minf: u32 = 0x6d696e66;
+    pub const stbl: u32 = 0x7374626c;
+    pub const stts: u32 = 0x73747473;
+    pub const edts: u32 = 0x65647473;
+    pub const elst: u32 = 0x656C7374;
+    pub const dinf: u32 = 0x64696e66;
+    pub const dref: u32 = 0x64726566;
+    pub const url_: u32 = 0x75726c20;
+    pub const stsz: u32 = 0x7374737a;
+    pub const stsc: u32 = 0x73747363;
+    pub const stco: u32 = 0x7374636f;
+    pub const mvex: u32 = 0x6d766578;
+    pub const trex: u32 = 0x74726578;
+    pub const moof: u32 = 0x6d6f6f66;
+    pub const mfhd: u32 = 0x6d666864;
+    pub const traf: u32 = 0x74726166;
+    pub const tfhd: u32 = 0x74666864;
+    pub const trun: u32 = 0x7472756e;
+    pub const tfdt: u32 = 0x74666474;
+    pub const vmhd: u32 = 0x766d6864;
+    pub const smhd: u32 = 0x736d6864;
+    pub const hmhd: u32 = 0x686d6864;
+    pub const nmhd: u32 = 0x6e6d6864;
+    pub const stsd: u32 = 0x73747364;
+    pub const btrt: u32 = 0x62747274;
+    pub const mp4a: u32 = 0x6d703461;
+    pub const avc1: u32 = 0x61766331;
+    pub const avcC: u32 = 0x61766343;
+    pub const colr: u32 = 0x636F6C72;
+    pub const esds: u32 = 0x65736473;
+}
