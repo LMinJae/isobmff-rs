@@ -2675,6 +2675,8 @@ impl trex {
 
 #[cfg(test)]
 mod tests {
+    use bytes::BytesMut;
+
     use crate::{IO, Object};
     use crate::moov::{dinf, edts, elst, hdlr, mdhd, mdia, MediaInformationHeader, minf, moov, mvex, mvhd, SampleEntry, smhd, stbl, stsd, tkhd, trak, trex, vmhd};
 
@@ -2795,14 +2797,17 @@ mod tests {
                                 v.stsd =  {
                                     let mut v = stsd::default();
 
-                                    v.entries.push(SampleEntry::Audio {
-                                        base: Box::new(SampleEntry::Base {
-                                            handler_type: 0x6d703461,
-                                            data_reference_index: 1,
+                                    v.entries.push(SampleEntry::mp4a {
+                                        base: Box::new(SampleEntry::Audio {
+                                            base: Box::new(SampleEntry::Base {
+                                                handler_type: 0x6d703461,
+                                                data_reference_index: 1,
+                                            }),
+                                            channel_count: 2,
+                                            sample_size: 16,
+                                            sample_rate: 1445068800,
                                         }),
-                                        channel_count: 2,
-                                        sample_size: 16,
-                                        sample_rate: 1445068800,
+                                        ext: BytesMut::new(),
                                     });
 
                                     v
